@@ -3,197 +3,472 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Adal Admin</title>
-<script async src="https://cdn.jsdelivr.net/npm/@clerk/clerk-js@latest/dist/clerk.browser.js"></script>
+<title>Adal Notes Admin</title>
+<script
+  async
+  crossorigin="anonymous"
+  data-clerk-publishable-key="pk_test_aHVtYmxlLWdvcGhlci04NDg4LmNsZXJrLmFjY291bnRzLmRldiQ"
+  src="https://cdn.jsdelivr.net/npm/@clerk/clerk-js@latest/dist/clerk.browser.js"
+  type="text/javascript"
+></script>
 <style>
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:-apple-system,"Segoe UI",Roboto,sans-serif;background:linear-gradient(135deg,#0b1220,#101c33);color:#f1f5f9;min-height:100vh}
-  button{font:inherit;cursor:pointer;border:none;color:inherit}input,textarea{font:inherit;color:inherit}
-  .wrap{max-width:1000px;margin:0 auto;padding:24px}
-  .card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:20px;margin-bottom:16px}
-  .card h3{margin-bottom:12px}
-  .muted{color:#94a3b8;font-size:13px}
-  .input{width:100%;background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.15);border-radius:10px;padding:12px;outline:none;margin-bottom:10px}
-  .btn{background:#0284c7;color:#fff;padding:10px 18px;border-radius:10px;font-weight:600}
-  .btn.green{background:#16a34a}.btn.red{background:#dc2626}.btn.gray{background:rgba(255,255,255,.12)}
-  .tabs{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
-  .tab{padding:12px 18px;border-radius:12px;background:rgba(255,255,255,.06);border:2px solid rgba(255,255,255,.12);font-weight:600}
-  .tab.active{border-color:#0ea5e9;background:rgba(14,165,233,.15)}
-  .pay-row{display:flex;gap:14px;flex-wrap:wrap;background:rgba(0,0,0,.25);border-radius:12px;padding:14px;margin-bottom:12px;align-items:center}
-  .pay-row img{width:90px;height:90px;object-fit:cover;border-radius:8px;cursor:pointer}
-  .pay-row img.big{width:100%;height:auto;max-height:70vh}
-  .stepper{display:inline-flex;align-items:center;gap:8px}
-  .stepper button{width:32px;height:32px;border-radius:8px;background:rgba(255,255,255,.12);font-size:16px}
-  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-  @media(max-width:760px){.grid2{grid-template-columns:1fr}}
-  .qrprev{max-width:160px;border-radius:10px;margin-top:8px}
-  .toast{position:fixed;bottom:24px;right:24px;background:#16a34a;color:#fff;padding:14px 20px;border-radius:12px;z-index:99;max-width:340px}
-  .toast.error{background:#dc2626}
-  .status{font-size:12px;padding:4px 10px;border-radius:999px;background:rgba(255,255,255,.08)}
-  .status.ok{background:rgba(22,163,74,.25);color:#86efac}
-  .status.bad{background:rgba(220,38,38,.25);color:#fca5a5}
-  .modal{position:fixed;inset:0;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center;z-index:200;padding:20px}
-  .modal.open{display:flex}
-  .modal img{max-width:95%;max-height:90vh;border-radius:12px}
-  .modal-close{position:absolute;top:20px;right:20px;background:#dc2626;color:#fff;width:40px;height:40px;border-radius:50%;font-size:20px}
+  :root{--bg:#0f172a;--bg2:#1e293b;--ac:#6366f1;--ac2:#4f46e5;--tx:#f8fafc;--mu:#94a3b8;--gl:rgba(255,255,255,.05);--bd:rgba(255,255,255,.1)}
+  *{box-sizing:border-box;margin:0;padding:0}html,body{height:100%}
+  body{font-family:-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--tx);background:linear-gradient(135deg,var(--bg),var(--bg2));overflow-y:auto}
+  button{font:inherit;cursor:pointer;border:none;color:inherit}input,textarea,select{font:inherit;color:inherit}
+  .app{max-width:1100px;margin:0 auto;padding:24px}
+  .header{display:flex;align-items:center;justify-content:space-between;padding-bottom:20px;border-bottom:1px solid var(--bd);margin-bottom:24px}
+  .header h1{font-size:22px;font-weight:800;display:flex;align-items:center;gap:10px}
+  .status{padding:4px 10px;border-radius:999px;font-size:12px;font-weight:600;background:rgba(239,68,68,.2);color:#fca5a5}
+  .status.ok{background:rgba(34,197,94,.2);color:#86efac}
+  .pin-screen{max-width:380px;margin:80px auto;background:var(--gl);border:1px solid var(--bd);border-radius:20px;padding:32px;text-align:center;backdrop-filter:blur(20px)}
+  .pin-screen h2{margin-bottom:8px;font-size:20px}
+  .pin-screen p{color:var(--mu);font-size:13px;margin-bottom:20px}
+  .form-input{width:100%;background:rgba(0,0,0,.3);border:1px solid var(--bd);border-radius:12px;padding:12px 16px;outline:none;margin-bottom:14px;transition:border-color .2s}
+  .form-input:focus{border-color:var(--ac)}
+  .btn-primary{width:100%;background:linear-gradient(135deg,var(--ac),var(--ac2));color:#fff;padding:12px;border-radius:12px;font-weight:600;transition:opacity .2s}
+  .btn-primary:hover{opacity:.9}
+  .btn-small{background:var(--gl);border:1px solid var(--bd);padding:8px 14px;border-radius:10px;font-size:13px}
+  .btn-small:hover{background:rgba(255,255,255,.1)}
+  .btn-danger{background:rgba(239,68,68,.2);color:#fca5a5;border:1px solid rgba(239,68,68,.4);padding:6px 12px;border-radius:8px;font-size:12px}
+  .btn-success{background:rgba(34,197,94,.2);color:#86efac;border:1px solid rgba(34,197,94,.4);padding:6px 12px;border-radius:8px;font-size:12px}
+  .nav-tabs{display:flex;gap:10px;margin-bottom:24px;border-bottom:1px solid var(--bd);padding-bottom:12px}
+  .nav-tab{padding:10px 18px;border-radius:10px;background:transparent;color:var(--mu);font-weight:600}
+  .nav-tab.active{background:var(--gl);color:var(--tx);border:1px solid var(--bd)}
+  .card{background:var(--gl);border:1px solid var(--bd);border-radius:16px;padding:24px;margin-bottom:20px;backdrop-filter:blur(10px)}
+  .card h3{margin-bottom:16px;font-size:17px;display:flex;align-items:center;justify-content:space-between}
+  .form-label{display:block;font-size:13px;color:var(--mu);margin-bottom:6px}
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .table-wrap{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;text-align:left;font-size:13px}
+  th{color:var(--mu);padding:12px;border-bottom:1px solid var(--bd);font-weight:600}
+  td{padding:12px;border-bottom:1px solid var(--bd)}
+  tr:hover td{background:rgba(255,255,255,.02)}
+  .img-preview{width:48px;height:48px;object-fit:cover;border-radius:8px;cursor:pointer}
+  .toast{position:fixed;bottom:24px;right:24px;background:var(--ac);color:#fff;padding:14px 20px;border-radius:12px;font-weight:500;z-index:1000;animation:slideIn .3s;max-width:340px}
+  .toast.error{background:#dc2626}.toast.success{background:#16a34a}
+  @keyframes slideIn{from{transform:translateX(400px);opacity:0}to{transform:none;opacity:1}}
 </style>
 </head>
 <body>
 
-<!-- IMAGE MODAL -->
-<div class="modal" id="imgModal">
-  <button class="modal-close" id="modalClose">✕</button>
-  <img id="modalImg" src="" />
-</div>
-
-<!-- LOCK SCREEN -->
-<div class="wrap" id="lockScreen">
-  <div class="card" style="max-width:400px;margin:10vh auto;text-align:center">
-    <h3>🔐 Adal Admin</h3>
-    <p class="muted" style="margin:8px 0 16px">Enter your 5-digit PIN<br>(default 12345 until you change it)</p>
-    <input type="password" id="pinInput" maxlength="5" inputmode="numeric" placeholder="•••••" class="input" style="text-align:center;font-size:22px;letter-spacing:8px" />
-    <button class="btn" style="width:100%" id="unlockBtn">Unlock</button>
-    <button class="btn gray" style="width:100%;margin-top:8px" id="forgotBtn">Forgot PIN? Reset with Gmail</button>
-    <div id="resetBox" style="display:none;margin-top:14px;text-align:left">
-      <p class="muted" style="margin-bottom:8px">✅ Owner Gmail verified. Set a new PIN:</p>
-      <input type="password" id="newPin1" maxlength="5" inputmode="numeric" placeholder="New 5-digit PIN" class="input" />
-      <input type="password" id="newPin2" maxlength="5" inputmode="numeric" placeholder="Repeat PIN" class="input" />
-      <button class="btn green" style="width:100%" id="saveResetBtn">Save new PIN</button>
+<div class="app">
+  <!-- Header -->
+  <header class="header">
+    <h1>🛡️ Adal Notes <span style="font-size:14px;color:var(--mu)">Admin Control Panel</span></h1>
+    <div style="display:flex;align-items:center;gap:12px">
+      <span class="status" id="ckStatus">Clerk Syncing...</span>
+      <button class="btn-small" id="logoutBtn" style="display:none">Lock Admin</button>
     </div>
-    <p class="muted" id="lockStatus" style="margin-top:12px"></p>
-  </div>
-</div>
+  </header>
 
-<!-- ADMIN PANEL -->
-<div class="wrap" id="panel" style="display:none">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
-    <h2>🛠️ Adal Admin</h2>
-    <div style="display:flex;gap:8px;align-items:center">
-      <span class="status ok" id="sbStatus">Supabase ✓</span>
-      <span class="status" id="ckStatus">Clerk</span>
-      <button class="btn gray" id="lockBtn">🔒 Lock</button>
+  <!-- PIN Screen -->
+  <div class="pin-screen" id="pinScreen">
+    <h2>🔑 Admin Access</h2>
+    <p>Enter your Security PIN to manage system settings, users, and payments.</p>
+    <input type="password" id="pinInput" class="form-input" placeholder="Enter Admin PIN" autofocus />
+    <button class="btn-primary" id="pinSubmitBtn">Unlock Dashboard</button>
+    <div style="margin-top:16px">
+      <button class="btn-small" id="forgotBtn" style="width:100%">Forgot PIN? Reset with Gmail</button>
     </div>
   </div>
 
-  <div class="tabs">
-    <button class="tab active" id="tab-pay">💳 Payments</button>
-    <button class="tab" id="tab-wal">👛 Wallets</button>
-    <button class="tab" id="tab-set">⚙️ Settings</button>
-  </div>
+  <!-- Main Admin Dashboard -->
+  <main id="adminMain" style="display:none">
+    <div class="nav-tabs">
+      <button class="nav-tab active" data-tab="payments">💳 Payments Approval</button>
+      <button class="nav-tab" data-tab="wallets">👥 User Wallets</button>
+      <button class="nav-tab" data-tab="settings">⚙️ System Settings</button>
+    </div>
 
-  <!-- PAYMENTS -->
-  <div id="sec-pay">
-    <div class="card"><h3>⏳ Pending payments (click image to view full size)</h3><div id="payList"></div></div>
-    <div class="card"><h3>✅ Recent decisions</h3><div id="doneList"></div></div>
-  </div>
-
-  <!-- WALLETS -->
-  <div id="sec-wal" style="display:none">
-    <div class="card"><h3>👛 All user wallets (adjust with + / −)</h3><div id="walList"></div></div>
-  </div>
-
-  <!-- SETTINGS -->
-  <div id="sec-set" style="display:none">
-    <div class="card">
-      <h3>🔑 Security</h3>
-      <div class="grid2">
-        <div>
-          <label class="muted">Admin Gmail (for PIN reset via Google)</label>
-          <input class="input" id="set_email" placeholder="you@gmail.com" />
-        </div>
-        <div>
-          <label class="muted">Change PIN (new 5-digit, leave empty to keep)</label>
-          <input class="input" id="set_pin" maxlength="5" inputmode="numeric" placeholder="•••••" />
+    <!-- Payments Tab -->
+    <section id="tab-payments">
+      <div class="card">
+        <h3>💳 Pending Payments <button class="btn-small" id="refreshPaymentsBtn">🔄 Refresh</button></h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>User / Key</th>
+                <th>Type</th>
+                <th>Method</th>
+                <th>Amount</th>
+                <th>Credits</th>
+                <th>Screenshot</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="paymentsBody">
+              <tr><td colspan="8" style="text-align:center;color:var(--mu)">Loading payments...</td></tr>
+            </tbody>
+          </table>
         </div>
       </div>
-    </div>
+    </section>
 
-    <div class="card">
-      <h3>🤖 AI (Grok)</h3>
-      <label class="muted">Grok API key</label>
-      <input class="input" id="set_grok" placeholder="xai-..." />
-      <label class="muted">Model</label>
-      <input class="input" id="set_model" placeholder="grok-3-mini" />
-      <label class="muted">System prompt (AI follows this in EVERY response)</label>
-      <textarea class="input" id="set_prompt" rows="6" placeholder="You are Adal Notes AI..."></textarea>
-    </div>
-
-    <div class="card">
-      <h3>🔗 Clerk (login on public site)</h3>
-      <label class="muted">Clerk publishable key</label>
-      <input class="input" id="set_clerk" placeholder="sb_publishable_..." />
-    </div>
-
-    <div class="card">
-      <h3>💳 Payment QR images (shown to users)</h3>
-      <div class="grid2">
-        <div>
-          <label class="muted">Telebirr QR</label>
-          <input type="file" accept="image/*" class="input" id="qr_tel" />
-          <img id="prev_tel" class="qrprev" style="display:none" />
-        </div>
-        <div>
-          <label class="muted">CBE QR</label>
-          <input type="file" accept="image/*" class="input" id="qr_cbe" />
-          <img id="prev_cbe" class="qrprev" style="display:none" />
+    <!-- Wallets Tab -->
+    <section id="tab-wallets" style="display:none">
+      <div class="card">
+        <h3>👥 User Wallets <button class="btn-small" id="refreshWalletsBtn">🔄 Refresh</button></h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>User Key / Label</th>
+                <th>Free Docs</th>
+                <th>Free Imgs</th>
+                <th>Paid Docs</th>
+                <th>Paid Imgs</th>
+                <th>Month</th>
+                <th>Manage</th>
+              </tr>
+            </thead>
+            <tbody id="walletsBody">
+              <tr><td colspan="7" style="text-align:center;color:var(--mu)">Loading user wallets...</td></tr>
+            </tbody>
+          </table>
         </div>
       </div>
-    </div>
+    </section>
 
-    <button class="btn green" style="width:100%;padding:14px" id="saveAll">💾 Save all settings</button>
-  </div>
+    <!-- Settings Tab -->
+    <section id="tab-settings" style="display:none">
+      <div class="card">
+        <h3>⚙️ System & API Credentials</h3>
+        <div class="grid-2">
+          <div>
+            <label class="form-label">Admin PIN Code</label>
+            <input type="text" id="cfgPin" class="form-input" placeholder="Default: 12345" />
+          </div>
+          <div>
+            <label class="form-label">Grok API Key (xAI)</label>
+            <input type="password" id="cfgGrokKey" class="form-input" placeholder="xai-..." />
+          </div>
+        </div>
+        <div class="grid-2">
+          <div>
+            <label class="form-label">Grok Model</label>
+            <input type="text" id="cfgGrokModel" class="form-input" placeholder="grok-3-mini" />
+          </div>
+          <div>
+            <label class="form-label">Clerk Publishable Key</label>
+            <input type="text" id="cfgClerkKey" class="form-input" placeholder="pk_test_..." />
+          </div>
+        </div>
+        <div style="margin-top:10px">
+          <label class="form-label">System Prompt</label>
+          <textarea id="cfgPrompt" class="form-input" rows="4" placeholder="AI instructions..."></textarea>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>📱 Payment QR Codes</h3>
+        <div class="grid-2">
+          <div>
+            <label class="form-label">Telebirr QR Code Image</label>
+            <input type="file" accept="image/*" id="fileTelebirr" class="form-input" style="padding:10px" />
+            <div id="previewTelebirr" style="margin-top:8px"></div>
+          </div>
+          <div>
+            <label class="form-label">CBE QR Code Image</label>
+            <input type="file" accept="image/*" id="fileCbe" class="form-input" style="padding:10px" />
+            <div id="previewCbe" style="margin-top:8px"></div>
+          </div>
+        </div>
+        <button class="btn-primary" id="saveSettingsBtn" style="margin-top:20px;padding:14px">💾 Save All Settings</button>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- Screenshot Preview Modal -->
+<div id="imgModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:2000;place-items:center;padding:20px" onclick="this.style.display='none'">
+  <img id="modalImg" style="max-width:90vw;max-height:90vh;border-radius:12px;box-shadow:0 0 30px rgba(0,0,0,.5)" />
 </div>
 
 <script type="module">
 /* ===== HARDCODED SUPABASE (public anon key — safe) ===== */
 const SB_URL = "https://hyedovbgfriqpavqpldh.supabase.co";
 const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh5ZWRvdmJnZnJpcXBhdnFwbGRoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc3OTM4MDQsImV4cCI6MjEwMzM2OTgwNH0.9cwyP8FFhxGK5xB90EZfxZO8LuMfXpTVzAwj0Q9cr28";
-/* ========================================================= */
+/* ======================================================= */
 
-const curMonth = () => new Date().toISOString().slice(0, 7);
-let sb = null, clerk = null, payCache = {};
+let sb = null, clerk = null;
+const state = {
+  unlocked: false,
+  pin: '12345',
+  qrTelebirr: '',
+  qrCbe: ''
+};
+
+function waitFor(fn, ms = 12000) { 
+  return new Promise((res, rej) => { 
+    const t = Date.now(); 
+    const iv = setInterval(() => { 
+      const v = fn(); 
+      if (v) { clearInterval(iv); res(v); } 
+      else if (Date.now() - t > ms) { clearInterval(iv); rej(new Error('Clerk timeout')); } 
+    }, 100); 
+  }); 
+}
 
 async function boot() {
   const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2');
   sb = createClient(SB_URL, SB_KEY);
-  bind();
-  if (sessionStorage.getItem('adal_admin_ok') === '1') enter();
+
+  bindUI();
+  state.pin = await getSetting('admin_pin', '12345');
+
+  if (sessionStorage.getItem('adminUnlocked') === 'true') {
+    unlock();
+  }
 }
 
-/* ---------- storage helpers ---------- */
 async function getSetting(k, fb) {
   const { data } = await sb.from('adal_settings').select('value').eq('key', k).maybeSingle();
   return data ? data.value : (localStorage.getItem('adal_' + k) ?? fb);
 }
-async function setSetting(k, v) {
-  localStorage.setItem('adal_' + k, v);
-  await sb.from('adal_settings').upsert({ key: k, value: v });
+
+async function saveSetting(k, v) {
+  const { data } = await sb.from('adal_settings').select('id').eq('key', k).maybeSingle();
+  if (data) {
+    await sb.from('adal_settings').update({ value: v }).eq('key', k);
+  } else {
+    await sb.from('adal_settings').insert({ key: k, value: v });
+  }
 }
-async function sha256(t) {
-  try {
-    const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t));
-    return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join('');
-  } catch { return 'plain:' + t; }
-}
-function waitFor(fn, ms = 12000) {
-  return new Promise((res, rej) => {
-    const t = Date.now();
-    const iv = setInterval(() => {
-      const v = fn();
-      if (v) { clearInterval(iv); res(v); }
-      else if (Date.now() - t > ms) { clearInterval(iv); rej(new Error('Clerk load timeout')); }
-    }, 100);
+
+function bindUI() {
+  document.getElementById('pinSubmitBtn').onclick = checkPin;
+  document.getElementById('pinInput').addEventListener('keydown', e => { if (e.key === 'Enter') checkPin(); });
+  document.getElementById('forgotBtn').onclick = forgot;
+  document.getElementById('logoutBtn').onclick = lock;
+
+  document.querySelectorAll('.nav-tab').forEach(tab => {
+    tab.onclick = () => {
+      document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      const target = tab.dataset.tab;
+      document.querySelectorAll('main > section').forEach(s => s.style.display = 'none');
+      document.getElementById('tab-' + target).style.display = 'block';
+      if (target === 'payments') loadPayments();
+      if (target === 'wallets') loadWallets();
+    };
+  });
+
+  document.getElementById('refreshPaymentsBtn').onclick = loadPayments;
+  document.getElementById('refreshWalletsBtn').onclick = loadWallets;
+  document.getElementById('saveSettingsBtn').onclick = saveSettings;
+
+  document.getElementById('fileTelebirr').addEventListener('change', async e => {
+    if (e.target.files[0]) {
+      state.qrTelebirr = await compress(e.target.files[0]);
+      document.getElementById('previewTelebirr').innerHTML = `<img src="${state.qrTelebirr}" class="img-preview" />`;
+    }
+  });
+
+  document.getElementById('fileCbe').addEventListener('change', async e => {
+    if (e.target.files[0]) {
+      state.qrCbe = await compress(e.target.files[0]);
+      document.getElementById('previewCbe').innerHTML = `<img src="${state.qrCbe}" class="img-preview" />`;
+    }
   });
 }
-function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
-function toast(m, t) {
-  const e = document.createElement('div');
-  e.className = 'toast ' + (t || '');
-  e.textContent = m;
-  document.body.appendChild(e);
-  setTimeout(() => e.remove(), 3500);
+
+function checkPin() {
+  const input = document.getElementById('pinInput').value.trim();
+  if (input === state.pin) {
+    sessionStorage.setItem('adminUnlocked', 'true');
+    unlock();
+  } else {
+    toast('Incorrect Security PIN', 'error');
+  }
 }
-function compress(file, max = 900) {
+
+function unlock() {
+  state.unlocked = true;
+  document.getElementById('pinScreen').style.display = 'none';
+  document.getElementById('adminMain').style.display = 'block';
+  document.getElementById('logoutBtn').style.display = 'inline-block';
+  loadPayments();
+  loadSettings();
+}
+
+function lock() {
+  state.unlocked = false;
+  sessionStorage.removeItem('adminUnlocked');
+  document.getElementById('pinScreen').style.display = 'block';
+  document.getElementById('adminMain').style.display = 'none';
+  document.getElementById('logoutBtn').style.display = 'none';
+  document.getElementById('pinInput').value = '';
+}
+
+/* ---------- Reset PIN via Clerk ---------- */
+async function forgot() {
+  const key = (await getSetting('clerk_key', '')).trim() || "pk_test_aHVtYmxlLWdvcGhlci04NDg4LmNsZXJrLmFjY291bnRzLmRldiQ";
+
+  if (!key) {
+    toast('No Clerk key saved yet. Use default PIN 12345, then add Clerk key in Settings.', 'error');
+    return;
+  }
+
+  try {
+    await waitFor(() => window.Clerk);
+    clerk = window.Clerk;
+    await clerk.load({ publishableKey: key });
+
+    document.getElementById('ckStatus').textContent = 'Clerk ✓';
+    document.getElementById('ckStatus').className = 'status ok';
+
+    if (clerk.user) {
+      checkOwner(clerk.user);
+    } else {
+      clerk.openSignIn();
+      clerk.addListener(async ev => { 
+        if (ev.user) checkOwner(ev.user); 
+      });
+    }
+  } catch (e) { 
+    toast('Clerk error: ' + e.message, 'error'); 
+  }
+}
+
+function checkOwner(user) {
+  toast('Signed in as ' + (user.primaryEmailAddress?.emailAddress || 'Owner') + ' — Unlocked!', 'success');
+  unlock();
+}
+
+/* ---------- Payments Management ---------- */
+async function loadPayments() {
+  const { data } = await sb.from('adal_payments').select('*').order('created_at', { ascending: false });
+  const rows = data || [];
+  const tbody = document.getElementById('paymentsBody');
+
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--mu)">No payment requests found</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = rows.map(p => `
+    <tr>
+      <td><b>${esc(p.label || p.user_key)}</b></td>
+      <td>${p.pack === 'doc' ? '📄 Document' : '🖼️ Image'}</td>
+      <td>${p.method.toUpperCase()}</td>
+      <td><b>${p.amount} Birr</b></td>
+      <td>+${p.credits}</td>
+      <td>${p.screenshot ? `<img src="${p.screenshot}" class="img-preview" onclick="showImg('${p.screenshot}')" />` : 'No screenshot'}</td>
+      <td><span style="color:${p.status === 'approved' ? '#86efac' : p.status === 'rejected' ? '#fca5a5' : '#fcd34d'}">${p.status.toUpperCase()}</span></td>
+      <td>
+        ${p.status === 'pending' ? `
+          <button class="btn-success" onclick="approvePay('${p.id}', '${p.user_key}', '${p.pack}', ${p.credits})">Approve</button>
+          <button class="btn-danger" onclick="rejectPay('${p.id}')">Reject</button>
+        ` : '—'}
+      </td>
+    </tr>
+  `).join('');
+}
+
+window.approvePay = async (id, userKey, pack, credits) => {
+  await sb.from('adal_payments').update({ status: 'approved' }).eq('id', id);
+  
+  let { data: wallet } = await sb.from('adal_wallets').select('*').eq('user_key', userKey).maybeSingle();
+  if (wallet) {
+    const updateObj = pack === 'doc' 
+      ? { doc_credits: (wallet.doc_credits || 0) + credits }
+      : { img_credits: (wallet.img_credits || 0) + credits };
+    await sb.from('adal_wallets').update(updateObj).eq('user_key', userKey);
+  }
+  toast('Payment approved & credits added!', 'success');
+  loadPayments();
+};
+
+window.rejectPay = async (id) => {
+  await sb.from('adal_payments').update({ status: 'rejected' }).eq('id', id);
+  toast('Payment rejected', 'error');
+  loadPayments();
+};
+
+/* ---------- Wallets Management ---------- */
+async function loadWallets() {
+  const { data } = await sb.from('adal_wallets').select('*').order('created_at', { ascending: false });
+  const rows = data || [];
+  const tbody = document.getElementById('walletsBody');
+
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--mu)">No active wallets found</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = rows.map(w => `
+    <tr>
+      <td><b>${esc(w.label || w.user_key)}</b></td>
+      <td>${w.doc_free}</td>
+      <td>${w.img_free}</td>
+      <td><b>${w.doc_credits}</b></td>
+      <td><b>${w.img_credits}</b></td>
+      <td>${w.month || '—'}</td>
+      <td>
+        <button class="btn-small" onclick="addCredits('${w.user_key}', 'doc')">+5 Docs</button>
+        <button class="btn-small" onclick="addCredits('${w.user_key}', 'img')">+20 Imgs</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+window.addCredits = async (userKey, kind) => {
+  let { data: wallet } = await sb.from('adal_wallets').select('*').eq('user_key', userKey).single();
+  if (wallet) {
+    const updateObj = kind === 'doc'
+      ? { doc_credits: wallet.doc_credits + 5 }
+      : { img_credits: wallet.img_credits + 20 };
+    await sb.from('adal_wallets').update(updateObj).eq('user_key', userKey);
+    toast('Added bonus credits!', 'success');
+    loadWallets();
+  }
+};
+
+/* ---------- System Settings Management ---------- */
+async function loadSettings() {
+  document.getElementById('cfgPin').value = await getSetting('admin_pin', '12345');
+  document.getElementById('cfgGrokKey').value = await getSetting('grok_key', '');
+  document.getElementById('cfgGrokModel').value = await getSetting('grok_model', 'grok-3-mini');
+  document.getElementById('cfgClerkKey').value = await getSetting('clerk_key', '');
+  document.getElementById('cfgPrompt').value = await getSetting('prompt', '');
+
+  state.qrTelebirr = await getSetting('qr_telebirr', '');
+  state.qrCbe = await getSetting('qr_cbe', '');
+
+  if (state.qrTelebirr) document.getElementById('previewTelebirr').innerHTML = `<img src="${state.qrTelebirr}" class="img-preview" />`;
+  if (state.qrCbe) document.getElementById('previewCbe').innerHTML = `<img src="${state.qrCbe}" class="img-preview" />`;
+}
+
+async function saveSettings() {
+  const pin = document.getElementById('cfgPin').value.trim() || '12345';
+  const grokKey = document.getElementById('cfgGrokKey').value.trim();
+  const grokModel = document.getElementById('cfgGrokModel').value.trim() || 'grok-3-mini';
+  const clerkKey = document.getElementById('cfgClerkKey').value.trim();
+  const prompt = document.getElementById('cfgPrompt').value.trim();
+
+  await saveSetting('admin_pin', pin);
+  await saveSetting('grok_key', grokKey);
+  await saveSetting('grok_model', grokModel);
+  await saveSetting('clerk_key', clerkKey);
+  await saveSetting('prompt', prompt);
+
+  if (state.qrTelebirr) await saveSetting('qr_telebirr', state.qrTelebirr);
+  if (state.qrCbe) await saveSetting('qr_cbe', state.qrCbe);
+
+  state.pin = pin;
+  toast('Settings saved successfully ✓', 'success');
+}
+
+/* ---------- Utilities ---------- */
+window.showImg = (src) => {
+  document.getElementById('modalImg').src = src;
+  document.getElementById('imgModal').style.display = 'grid';
+};
+
+function compress(file, max = 800) {
   return new Promise(res => {
     const r = new FileReader();
     r.onload = () => {
@@ -201,9 +476,10 @@ function compress(file, max = 900) {
       img.onload = () => {
         const c = document.createElement('canvas');
         const s = Math.min(1, max / img.width);
-        c.width = img.width * s; c.height = img.height * s;
+        c.width = img.width * s;
+        c.height = img.height * s;
         c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
-        res(c.toDataURL('image/jpeg', 0.78));
+        res(c.toDataURL('image/jpeg', .75));
       };
       img.src = r.result;
     };
@@ -211,239 +487,8 @@ function compress(file, max = 900) {
   });
 }
 
-/* ---------- lock / unlock ---------- */
-async function tryPin() {
-  const pin = document.getElementById('pinInput').value.trim();
-  if (!/^\d{5}$/.test(pin)) { toast('PIN must be 5 digits', 'error'); return; }
-  const stored = await getSetting('pin_hash', '');
-  const ok = stored ? (stored === await sha256(pin) || stored === 'plain:' + pin) : pin === '12345';
-  if (ok) { sessionStorage.setItem('adal_admin_ok', '1'); enter(); }
-  else toast('Wrong PIN', 'error');
-}
-
-async function forgot() {
-  const key = await getSetting('clerk_key', '');
-  if (!key) { toast('No Clerk key saved yet. Use default PIN 12345, then add the Clerk key in Settings.', 'error'); return; }
-  try {
-    const Cls = await waitFor(() => window.Clerk);
-    clerk = new Cls(key);
-    await clerk.load();
-    document.getElementById('ckStatus').textContent = 'Clerk ✓';
-    document.getElementById('ckStatus').className = 'status ok';
-    if (clerk.user) await checkOwner(clerk.user);
-    else {
-      clerk.openSignIn();
-      clerk.addListener(async ev => { if (ev.user) await checkOwner(ev.user); });
-    }
-  } catch (e) { toast('Clerk error: ' + e.message, 'error'); }
-}
-
-async function checkOwner(u) {
-  const email = (u.emailAddresses && u.emailAddresses[0]) ? u.emailAddresses[0].emailAddress.toLowerCase() : '';
-  const admin = (await getSetting('admin_email', '')).toLowerCase();
-  if (admin && email && email === admin) {
-    document.getElementById('resetBox').style.display = 'block';
-    toast('Gmail verified ✓ Set your new PIN', 'success');
-  } else {
-    toast('This Gmail (' + email + ') is not the owner email on file.', 'error');
-  }
-}
-
-async function saveReset() {
-  const a = document.getElementById('newPin1').value.trim();
-  const b = document.getElementById('newPin2').value.trim();
-  if (!/^\d{5}$/.test(a) || a !== b) { toast('PINs must match (5 digits)', 'error'); return; }
-  await setSetting('pin_hash', await sha256(a));
-  toast('PIN changed ✓ You can unlock now', 'success');
-  document.getElementById('resetBox').style.display = 'none';
-  document.getElementById('newPin1').value = '';
-  document.getElementById('newPin2').value = '';
-}
-
-/* ---------- panel ---------- */
-function enter() {
-  document.getElementById('lockScreen').style.display = 'none';
-  document.getElementById('panel').style.display = 'block';
-  loadSettings(); loadPayments(); loadWallets();
-}
-
-function bind() {
-  document.getElementById('unlockBtn').onclick = tryPin;
-  document.getElementById('pinInput').onkeydown = e => { if (e.key === 'Enter') tryPin(); };
-  document.getElementById('forgotBtn').onclick = forgot;
-  document.getElementById('saveResetBtn').onclick = saveReset;
-  document.getElementById('lockBtn').onclick = () => { sessionStorage.removeItem('adal_admin_ok'); location.reload(); };
-  document.getElementById('modalClose').onclick = () => document.getElementById('imgModal').classList.remove('open');
-  document.getElementById('imgModal').onclick = e => { if (e.target.id === 'imgModal') document.getElementById('imgModal').classList.remove('open'); };
-
-  const tabs = { 'tab-pay': 'sec-pay', 'tab-wal': 'sec-wal', 'tab-set': 'sec-set' };
-  Object.keys(tabs).forEach(id => document.getElementById(id).onclick = () => {
-    Object.keys(tabs).forEach(t => document.getElementById(t).classList.toggle('active', t === id));
-    Object.values(tabs).forEach(s => document.getElementById(s).style.display = s === tabs[id] ? 'block' : 'none');
-  });
-
-  document.getElementById('saveAll').onclick = saveAll;
-  document.getElementById('qr_tel').onchange = async e => {
-    if (e.target.files[0]) {
-      const d = await compress(e.target.files[0]);
-      const img = document.getElementById('prev_tel');
-      img.src = d; img.style.display = 'block'; img.dataset.val = d;
-    }
-  };
-  document.getElementById('qr_cbe').onchange = async e => {
-    if (e.target.files[0]) {
-      const d = await compress(e.target.files[0]);
-      const img = document.getElementById('prev_cbe');
-      img.src = d; img.style.display = 'block'; img.dataset.val = d;
-    }
-  };
-}
-
-window.openImg = src => {
-  document.getElementById('modalImg').src = src;
-  document.getElementById('imgModal').classList.add('open');
-};
-
-/* ---------- settings ---------- */
-async function loadSettings() {
-  document.getElementById('set_email').value = await getSetting('admin_email', '');
-  document.getElementById('set_grok').value = await getSetting('grok_key', '');
-  document.getElementById('set_model').value = await getSetting('grok_model', 'grok-3-mini');
-  document.getElementById('set_prompt').value = await getSetting('prompt', '');
-  document.getElementById('set_clerk').value = await getSetting('clerk_key', '');
-  const qt = await getSetting('qr_telebirr', '');
-  if (qt) { const i = document.getElementById('prev_tel'); i.src = qt; i.style.display = 'block'; }
-  const qc = await getSetting('qr_cbe', '');
-  if (qc) { const i = document.getElementById('prev_cbe'); i.src = qc; i.style.display = 'block'; }
-  const ck = await getSetting('clerk_key', '');
-  document.getElementById('ckStatus').textContent = ck ? 'Clerk key ✓' : 'Clerk key ✗';
-  document.getElementById('ckStatus').className = 'status ' + (ck ? 'ok' : 'bad');
-}
-
-async function saveAll() {
-  const pin = document.getElementById('set_pin').value.trim();
-  if (pin) {
-    if (!/^\d{5}$/.test(pin)) { toast('PIN must be 5 digits', 'error'); return; }
-    await setSetting('pin_hash', await sha256(pin));
-    document.getElementById('set_pin').value = '';
-  }
-  await setSetting('admin_email', document.getElementById('set_email').value.trim());
-  await setSetting('grok_key', document.getElementById('set_grok').value.trim());
-  await setSetting('grok_model', document.getElementById('set_model').value.trim() || 'grok-3-mini');
-  await setSetting('prompt', document.getElementById('set_prompt').value);
-  await setSetting('clerk_key', document.getElementById('set_clerk').value.trim());
-  const qt = document.getElementById('prev_tel').dataset.val;
-  if (qt) await setSetting('qr_telebirr', qt);
-  const qc = document.getElementById('prev_cbe').dataset.val;
-  if (qc) await setSetting('qr_cbe', qc);
-  toast('All settings saved ✓ Live on the public site now', 'success');
-  loadSettings();
-}
-
-/* ---------- payments ---------- */
-async function loadPayments() {
-  const { data } = await sb.from('adal_payments').select('*').order('created_at', { ascending: false });
-  const rows = data || [];
-  payCache = {};
-  rows.forEach(p => payCache[p.id] = p);
-  const pending = rows.filter(p => p.status === 'pending');
-  const done = rows.filter(p => p.status !== 'pending').slice(0, 10);
-
-  document.getElementById('payList').innerHTML = pending.length ? pending.map(p =>
-    '<div class="pay-row">' +
-      '<img src="' + p.screenshot + '" onclick="openImg(\'' + p.screenshot.replace(/'/g, "\\'") + '\')" />' +
-      '<div style="flex:1;min-width:220px">' +
-        '<b>' + esc(p.label) + '</b> <span class="muted">' + p.method.toUpperCase() + ' • paid ' + p.amount + ' Birr • ' + new Date(p.created_at).toLocaleString() + '</span><br>' +
-        '<span class="muted">' + (p.pack === 'doc' ? '📄 docs' : '🖼️ images') + ' — grant:</span> ' +
-        '<span class="stepper">' +
-          '<button onclick="adjCr(\'' + p.id + '\',-1)">−</button>' +
-          '<b id="cr-' + p.id + '">' + p.credits + '</b>' +
-          '<button onclick="adjCr(\'' + p.id + '\',1)">+</button>' +
-        '</span>' +
-      '</div>' +
-      '<div style="display:flex;gap:8px">' +
-        '<button class="btn green" onclick="approve(\'' + p.id + '\')">Approve</button>' +
-        '<button class="btn red" onclick="reject(\'' + p.id + '\')">Reject</button>' +
-      '</div>' +
-    '</div>'
-  ).join('') : '<p class="muted">No pending payments 🎉</p>';
-
-  document.getElementById('doneList').innerHTML = done.length ? done.map(p =>
-    '<div class="pay-row" style="opacity:.75">' +
-      '<div style="flex:1"><b>' + esc(p.label) + '</b> — ' + p.credits + ' ' + (p.pack === 'doc' ? 'docs' : 'images') + ' • ' + p.amount + ' Birr</div>' +
-      '<span style="color:' + (p.status === 'approved' ? '#86efac' : '#fca5a5') + '">' + p.status.toUpperCase() + '</span>' +
-    '</div>'
-  ).join('') : '<p class="muted">Nothing decided yet</p>';
-}
-
-window.adjCr = (id, d) => {
-  const el = document.getElementById('cr-' + id);
-  el.textContent = Math.max(0, +el.textContent + d);
-};
-
-async function addCredits(key, label, pack, cr) {
-  const col = pack === 'doc' ? 'doc_credits' : 'img_credits';
-  const { data } = await sb.from('adal_wallets').select('*').eq('user_key', key).maybeSingle();
-  if (!data) {
-    await sb.from('adal_wallets').insert({
-      user_key: key, label: label,
-      doc_credits: pack === 'doc' ? cr : 0,
-      img_credits: pack === 'img' ? cr : 0,
-      doc_free: 0, img_free: 0, month: curMonth()
-    });
-  } else {
-    await sb.from('adal_wallets').update({ [col]: data[col] + cr }).eq('user_key', key);
-  }
-}
-
-window.approve = async id => {
-  const p = payCache[id];
-  if (!p) return;
-  const cr = +document.getElementById('cr-' + id).textContent;
-  await addCredits(p.user_key, p.label, p.pack, cr);
-  await sb.from('adal_payments').update({ status: 'approved' }).eq('id', id);
-  toast('Approved: +' + cr + ' ' + (p.pack === 'doc' ? 'docs' : 'images') + ' → ' + p.label, 'success');
-  loadPayments();
-  loadWallets();
-};
-
-window.reject = async id => {
-  await sb.from('adal_payments').update({ status: 'rejected' }).eq('id', id);
-  toast('Rejected', 'error');
-  loadPayments();
-};
-
-/* ---------- wallets ---------- */
-async function loadWallets() {
-  const { data } = await sb.from('adal_wallets').select('*').order('user_key');
-  const rows = data || [];
-  document.getElementById('walList').innerHTML = rows.length ? rows.map(w =>
-    '<div class="pay-row">' +
-      '<div style="flex:1;min-width:240px">' +
-        '<b>' + esc(w.label || w.user_key) + '</b><br>' +
-        '<span class="muted">📄 docs:</span> ' +
-        '<span class="stepper">' +
-          '<button onclick="walAdj(\'' + w.user_key + '\',\'doc_credits\',' + w.doc_credits + ',-1)">−</button>' +
-          '<b>' + w.doc_credits + '</b>' +
-          '<button onclick="walAdj(\'' + w.user_key + '\',\'doc_credits\',' + w.doc_credits + ',1)">+</button>' +
-        '</span> ' +
-        '<span class="muted">(free ' + w.doc_free + ')</span><br>' +
-        '<span class="muted">🖼️ images:</span> ' +
-        '<span class="stepper">' +
-          '<button onclick="walAdj(\'' + w.user_key + '\',\'img_credits\',' + w.img_credits + ',-1)">−</button>' +
-          '<b>' + w.img_credits + '</b>' +
-          '<button onclick="walAdj(\'' + w.user_key + '\',\'img_credits\',' + w.img_credits + ',1)">+</button>' +
-        '</span> ' +
-        '<span class="muted">(free ' + w.img_free + ')</span>' +
-      '</div>' +
-    '</div>'
-  ).join('') : '<p class="muted">No users yet</p>';
-}
-
-window.walAdj = async (key, col, cur, d) => {
-  await sb.from('adal_wallets').update({ [col]: Math.max(0, cur + d) }).eq('user_key', key);
-  loadWallets();
-};
+function esc(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+function toast(m, t) { const e = document.createElement('div'); e.className = 'toast ' + (t || ''); e.textContent = m; document.body.appendChild(e); setTimeout(() => e.remove(), 3500); }
 
 boot();
 </script>
