@@ -4,13 +4,6 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Adal Notes</title>
-<script
-  async
-  crossorigin="anonymous"
-  data-clerk-publishable-key="pk_test_aHVtYmxlLWdvcGhlci04NDg4LmNsZXJrLmFjY291bnRzLmRldiQ"
-  src="https://cdn.jsdelivr.net/npm/@clerk/clerk-js@latest/dist/clerk.browser.js"
-  type="text/javascript"
-></script>
 <style>
   :root{--bg:#0b1220;--bg2:#101c33;--ac:#0ea5e9;--ac2:#0284c7;--tx:#f1f5f9;--mu:#94a3b8;--gl:rgba(255,255,255,.06);--bd:rgba(255,255,255,.12)}
   body.theme-female{--bg:#2a1458;--bg2:#4a1d6e;--ac:#ec4899;--ac2:#db2777}
@@ -21,7 +14,19 @@
   body.theme-female .flowers{display:block}
   .flower{position:absolute;top:-10%;font-size:28px;opacity:.5;animation:fall linear infinite;filter:drop-shadow(0 0 8px rgba(236,72,153,.4))}
   @keyframes fall{to{transform:translateY(120vh) rotate(360deg)}}
-  .app{display:flex;height:100vh;position:relative;z-index:1}
+
+  /* Auth Screen Overlay */
+  .auth-overlay{position:fixed;inset:0;background:linear-gradient(135deg,var(--bg),var(--bg2));z-index:999;display:flex;align-items:center;justify-content:center;padding:20px}
+  .auth-card{background:var(--gl);border:1px solid var(--bd);border-radius:20px;padding:32px;width:100%;max-width:400px;backdrop-filter:blur(20px);box-shadow:0 20px 40px rgba(0,0,0,.4)}
+  .auth-title{font-size:24px;font-weight:800;margin-bottom:8px;text-align:center;background:linear-gradient(90deg,var(--ac),#a78bfa);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .auth-sub{font-size:13px;color:var(--mu);text-align:center;margin-bottom:24px}
+  .auth-form{display:flex;flex-direction:column;gap:14px}
+  .auth-tabs{display:flex;gap:10px;margin-bottom:16px;background:rgba(0,0,0,.2);padding:4px;border-radius:12px}
+  .auth-tab{flex:1;padding:8px;border-radius:8px;font-size:14px;font-weight:600;text-align:center;background:transparent;color:var(--mu);transition:.2s}
+  .auth-tab.active{background:var(--ac);color:#fff}
+
+  .app{display:none;height:100vh;position:relative;z-index:1}
+  .app.active{display:flex}
   .sidebar{width:280px;background:rgba(0,0,0,.3);backdrop-filter:blur(20px);border-right:1px solid var(--bd);display:flex;flex-direction:column;padding:20px 14px;gap:8px}
   .logo{display:flex;align-items:center;gap:12px;padding:10px 12px;margin-bottom:12px}
   .logo-icon{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,var(--ac),var(--ac2));display:grid;place-items:center;font-size:20px}
@@ -93,7 +98,38 @@
 </head>
 <body class="theme-male">
 <div class="flowers" id="flowers"></div>
-<div class="app">
+
+<div class="auth-overlay" id="authOverlay">
+  <div class="auth-card">
+    <div class="auth-title">Adal Notes</div>
+    <div class="auth-sub">Sign in or create an account to continue</div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tabSignin">Sign In</button>
+      <button class="auth-tab" id="tabSignup">Sign Up</button>
+    </div>
+    <div class="auth-form" id="authForm">
+      <div id="nameField" style="display:none">
+        <label class="form-label">Full Name</label>
+        <input type="text" id="authName" class="form-input" placeholder="e.g. Abebe Bikila" />
+      </div>
+      <div>
+        <label class="form-label">Username</label>
+        <input type="text" id="authUsername" class="form-input" placeholder="username" />
+      </div>
+      <div>
+        <label class="form-label">Password</label>
+        <input type="password" id="authPassword" class="form-input" placeholder="••••••••" />
+      </div>
+      <div id="verifyField" style="display:none">
+        <label class="form-label">Verify Password</label>
+        <input type="password" id="authVerify" class="form-input" placeholder="••••••••" />
+      </div>
+      <button class="btn-primary" id="authSubmit" style="margin-top:10px">Sign In</button>
+    </div>
+  </div>
+</div>
+
+<div class="app" id="app">
   <aside class="sidebar" id="sidebar">
     <div class="logo"><div class="logo-icon">📝</div><div><div class="logo-text">Adal Notes</div><div class="logo-sub">Powered by Grok</div></div></div>
     <button class="new-chat-btn" id="newChatBtn">➕ New Chat</button>
@@ -103,7 +139,7 @@
     <div class="sidebar-bottom">
       <div class="wline"><span>📄 Doc uploads left</span><b id="docLeft">0</b></div>
       <div class="wline"><span>🖼️ Image uploads left</span><b id="imgLeft">0</b></div>
-      <div style="margin-top:8px" id="authStatus">👤 Guest</div>
+      <div style="margin-top:8px" id="authStatus">👤 User</div>
     </div>
   </aside>
   <main class="main">
@@ -113,7 +149,7 @@
         <h1 id="pageTitle">Chat</h1>
       </div>
       <div style="display:flex;align-items:center;gap:10px">
-        <div id="authBox"><button class="btn-small" id="loginBtn">🔐 Sign in</button></div>
+        <button class="btn-small" id="logoutBtn">🚪 Logout</button>
         <div class="toggle" id="themeToggle"><span>👨</span><div class="toggle-track"><div class="toggle-thumb"></div></div><span>👩</span></div>
       </div>
     </header>
@@ -164,30 +200,29 @@
 const SB_URL = "https://hyedovbgfriqpavqpldh.supabase.co";
 const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh5ZWRvdmJnZnJpcXBhdnFwbGRoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc3OTM4MDQsImV4cCI6MjEwMzM2OTgwNH0.9cwyP8FFhxGK5xB90EZfxZO8LuMfXpTVzAwj0Q9cr28";
 
-const FREE_GUEST = { doc: 1, img: 5 };
 const FREE_USER = { doc: 3, img: 10 };
 const DOC_PACKS = [{c:1,p:20},{c:5,p:90},{c:10,p:150},{c:20,p:280}];
 const IMG_PACKS = [{c:10,p:10},{c:50,p:50},{c:100,p:100},{c:500,p:500}];
 const curMonth = () => new Date().toISOString().slice(0,7);
-let sb = null, clerk = null;
+let sb = null;
 
-function getDeviceId() {
-  let d = localStorage.getItem('deviceId');
-  if (!d) {
-    d = Math.random().toString(36).slice(2);
-    localStorage.setItem('deviceId', d);
+function getDeviceSerial() {
+  let serial = localStorage.getItem('device_serial');
+  if (!serial) {
+    serial = 'SN-' + Math.random().toString(36).substring(2, 10).toUpperCase() + '-' + Date.now().toString(36).toUpperCase();
+    localStorage.setItem('device_serial', serial);
   }
-  return d;
+  return serial;
 }
 
 const state = {
   theme: localStorage.getItem('theme') || 'male',
+  authMode: 'signin',
+  user: JSON.parse(localStorage.getItem('adal_user') || 'null'),
   apiKey: '', model: 'grok-3-mini', systemPrompt: '',
   messages: JSON.parse(localStorage.getItem('messages') || '[]'),
   history: JSON.parse(localStorage.getItem('history') || '[]'),
-  wallet: null, clerkUser: null,
-  userKey: 'g_' + getDeviceId(),
-  userLabel: 'Guest (' + getDeviceId().slice(-6) + ')',
+  wallet: null,
   qr: { telebirr: '', cbe: '' },
   packType: 'doc', selectedPack: 0, selectedMethod: 'telebirr',
   attachedFile: null, sending: false,
@@ -199,16 +234,47 @@ async function boot() {
   document.body.className = 'theme-' + state.theme;
   renderFlowers(); bindUI();
 
+  if (state.user) {
+    showApp();
+  } else {
+    showAuth();
+  }
+}
+
+function showAuth() {
+  document.getElementById('authOverlay').style.display = 'flex';
+  document.getElementById('app').classList.remove('active');
+}
+
+function showApp() {
+  document.getElementById('authOverlay').style.display = 'none';
+  document.getElementById('app').classList.add('active');
+  document.getElementById('authStatus').textContent = '👤 ' + (state.user.username || 'User');
+  initApp();
+}
+
+async function initApp() {
   state.apiKey = await getSetting('grok_key', '');
   state.model = (await getSetting('grok_model', '')) || 'grok-3-mini';
   state.systemPrompt = (await getSetting('prompt', '')).trim() || await promptTxt() || DEFAULT_PROMPT;
   state.qr.telebirr = await getSetting('qr_telebirr', '');
   state.qr.cbe = await getSetting('qr_cbe', '');
-  const clerkKey = (await getSetting('clerk_key', '')).trim() || "pk_test_aHVtYmxlLWdvcGhlci04NDg4LmNsZXJrLmFjY291bnRzLmRldiQ";
 
-  await initClerk(clerkKey);
+  await loadWallet();
   renderMessages(); renderHistory(); renderPacks(); renderQr(); renderMyPayments();
+  startHeartbeat();
 }
+
+function startHeartbeat() {
+  updateHeartbeat();
+  setInterval(updateHeartbeat, 30000);
+}
+
+async function updateHeartbeat() {
+  if (!state.user) return;
+  await sb.from('adal_users').update({ last_seen: new Date().toISOString() }).eq('username', state.user.username);
+}
+
 const DEFAULT_PROMPT = 'You are Adal Notes AI — a friendly, intelligent study assistant. Analyze uploaded files (PPT, PDF, images, audio). Answer clearly using headings, **bold** and bullet points. Be encouraging and precise.';
 async function promptTxt() { try { const r = await fetch('/prompt.txt'); return r.ok ? (await r.text()).trim() : ''; } catch { return ''; } }
 
@@ -217,108 +283,48 @@ async function getSetting(k, fb) {
   return data ? data.value : (localStorage.getItem('adal_' + k) ?? fb);
 }
 
-function waitFor(fn, ms = 12000) { 
-  return new Promise((res, rej) => { 
-    const t = Date.now(); 
-    const iv = setInterval(() => { 
-      const v = fn(); 
-      if (v) { clearInterval(iv); res(v); } 
-      else if (Date.now() - t > ms) { clearInterval(iv); rej(new Error('Clerk timeout')); } 
-    }, 100); 
-  }); 
-}
-
-async function triggerSignIn() {
-  if (!clerk) {
-    toast('Clerk is initializing... please try again in a moment.', 'error');
-    return;
-  }
-  try {
-    clerk.openSignIn();
-  } catch (e) {
-    toast('Sign in failed to open: ' + e.message, 'error');
-  }
-}
-
-async function initClerk(clerkKey) {
-  const box = document.getElementById('authBox');
-  if (!clerkKey) { 
-    box.innerHTML = '<button class="btn-small" id="loginBtn">🔐 Sign in</button>'; 
-    document.getElementById('loginBtn').onclick = () => toast('Owner: set Clerk key in admin panel', 'error'); 
-    await loadWallet();
-    return; 
-  }
-  try {
-    await waitFor(() => window.Clerk);
-    clerk = window.Clerk;
-    await clerk.load({ publishableKey: clerkKey });
-
-    if (clerk.user) {
-      state.clerkUser = clerk.user;
-      state.userKey = 'u_' + clerk.user.id;
-      state.userLabel = (clerk.user.emailAddresses && clerk.user.emailAddresses[0]) ? clerk.user.emailAddresses[0].emailAddress : 'user';
-      document.getElementById('authStatus').textContent = '👤 ' + state.userLabel;
-      box.innerHTML = '<span class="btn-small" id="ub"></span><button class="btn-small" id="outBtn">Sign out</button>';
-      try { clerk.mountUserButton(document.getElementById('ub')); } catch (e) { document.getElementById('ub').textContent = state.userLabel; }
-      document.getElementById('outBtn').onclick = async () => { await clerk.signOut(); location.reload(); };
-    } else {
-      state.userKey = 'g_' + getDeviceId();
-      state.userLabel = 'Guest (' + state.userKey.slice(-6) + ')';
-      document.getElementById('authStatus').textContent = '👤 ' + state.userLabel;
-      box.innerHTML = '<button class="btn-small" id="loginBtn">🔐 Sign in</button>';
-      document.getElementById('loginBtn').onclick = triggerSignIn;
-      clerk.addListener(ev => { if (ev.user) location.reload(); });
-    }
-  } catch (e) { 
-    state.userKey = 'g_' + getDeviceId();
-    state.userLabel = 'Guest (' + state.userKey.slice(-6) + ')';
-    box.innerHTML = '<button class="btn-small" id="loginBtn">🔐 Sign in</button>'; 
-    document.getElementById('loginBtn').onclick = triggerSignIn;
-  }
-  
-  await loadWallet();
-}
-
 async function loadWallet() {
-  const allow = state.clerkUser ? FREE_USER : FREE_GUEST;
-  let { data } = await sb.from('adal_wallets').select('*').eq('user_key', state.userKey).maybeSingle();
+  if (!state.user) return;
+  const userKey = 'u_' + state.user.username;
+  let { data } = await sb.from('adal_wallets').select('*').eq('user_key', userKey).maybeSingle();
   
   if (!data) { 
     data = { 
-      user_key: state.userKey, 
-      label: state.userLabel, 
+      user_key: userKey, 
+      label: state.user.name || state.user.username, 
       doc_credits: 0, 
       img_credits: 0, 
-      doc_free: allow.doc, 
-      img_free: allow.img, 
+      doc_free: FREE_USER.doc, 
+      img_free: FREE_USER.img, 
       month: curMonth() 
     }; 
     await sb.from('adal_wallets').insert(data); 
-  } else if (data.label !== state.userLabel) {
-    await sb.from('adal_wallets').update({ label: state.userLabel }).eq('user_key', state.userKey);
-  }
-
-  if (state.clerkUser && data.month !== curMonth()) { 
-    data.doc_free = allow.doc; 
-    data.img_free = allow.img; 
+  } else if (data.month !== curMonth()) { 
+    data.doc_free = FREE_USER.doc; 
+    data.img_free = FREE_USER.img; 
     data.month = curMonth(); 
-    await sb.from('adal_wallets').update({ doc_free: data.doc_free, img_free: data.img_free, month: data.month }).eq('user_key', state.userKey); 
+    await sb.from('adal_wallets').update({ doc_free: data.doc_free, img_free: data.img_free, month: data.month }).eq('user_key', userKey); 
   }
   
   state.wallet = data;
   renderWallet();
 }
 
-function persistWallet() { sb.from('adal_wallets').update({ doc_free: state.wallet.doc_free, img_free: state.wallet.img_free, doc_credits: state.wallet.doc_credits, img_credits: state.wallet.img_credits }).eq('user_key', state.userKey); }
+function persistWallet() { 
+  if (!state.user || !state.wallet) return;
+  sb.from('adal_wallets').update({ doc_free: state.wallet.doc_free, img_free: state.wallet.img_free, doc_credits: state.wallet.doc_credits, img_credits: state.wallet.img_credits }).eq('user_key', state.wallet.user_key); 
+}
 function renderWallet() { if (!state.wallet) return; document.getElementById('docLeft').textContent = state.wallet.doc_free + state.wallet.doc_credits; document.getElementById('imgLeft').textContent = state.wallet.img_free + state.wallet.img_credits; }
 function charge(kind) {
   const w = state.wallet;
+  if (!w) return false;
   if (kind === 'doc') { if (w.doc_free > 0) w.doc_free--; else if (w.doc_credits > 0) w.doc_credits--; else return false; }
   else { if (w.img_free > 0) w.img_free--; else if (w.img_credits > 0) w.img_credits--; else return false; }
   persistWallet(); renderWallet(); return true;
 }
 
 function renderFlowers() { const c = document.getElementById('flowers'); c.innerHTML = ''; ['🌸','','','','🌻','','','','🌷','','','','🌸','','','','🌻',''].forEach(f => { const el = document.createElement('span'); el.className = 'flower'; el.textContent = f; el.style.left = Math.random()*100+'%'; el.style.animationDuration = (8+Math.random()*8)+'s'; el.style.animationDelay = Math.random()*8+'s'; el.style.fontSize = (20+Math.random()*18)+'px'; c.appendChild(el); }); }
+
 function bindUI() {
   document.getElementById('themeToggle').onclick = () => { state.theme = state.theme === 'male' ? 'female' : 'male'; document.body.className = 'theme-' + state.theme; localStorage.setItem('theme', state.theme); };
   document.getElementById('menuBtn').onclick = () => document.getElementById('sidebar').classList.toggle('open');
@@ -326,6 +332,12 @@ function bindUI() {
   document.getElementById('attachBtn').onclick = () => document.getElementById('fileInput').click();
   document.getElementById('sendBtn').onclick = sendMessage;
   document.getElementById('paySubmit').onclick = submitPayment;
+  document.getElementById('logoutBtn').onclick = logout;
+
+  document.getElementById('tabSignin').onclick = () => setAuthMode('signin');
+  document.getElementById('tabSignup').onclick = () => setAuthMode('signup');
+  document.getElementById('authSubmit').onclick = handleAuthSubmit;
+
   document.getElementById('tab-doc').onclick = () => selectPackType('doc');
   document.getElementById('tab-img').onclick = () => selectPackType('img');
   document.querySelectorAll('.method-btn').forEach(b => b.onclick = () => { state.selectedMethod = b.dataset.method; document.querySelectorAll('.method-btn').forEach(x => x.classList.toggle('selected', x === b)); renderQr(); });
@@ -334,8 +346,75 @@ function bindUI() {
   i.addEventListener('input', () => { i.style.height = 'auto'; i.style.height = Math.min(i.scrollHeight, 180) + 'px'; });
   i.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
   document.getElementById('fileInput').addEventListener('change', e => { state.attachedFile = e.target.files[0] || null; renderFilePreview(); });
-  document.getElementById('loginBtn').onclick = triggerSignIn;
 }
+
+function setAuthMode(mode) {
+  state.authMode = mode;
+  document.getElementById('tabSignin').classList.toggle('active', mode === 'signin');
+  document.getElementById('tabSignup').classList.toggle('active', mode === 'signup');
+  document.getElementById('nameField').style.display = mode === 'signup' ? 'block' : 'none';
+  document.getElementById('verifyField').style.display = mode === 'signup' ? 'block' : 'none';
+  document.getElementById('authSubmit').textContent = mode === 'signup' ? 'Create Account' : 'Sign In';
+}
+
+async function handleAuthSubmit() {
+  const username = document.getElementById('authUsername').value.trim();
+  const password = document.getElementById('authPassword').value.trim();
+  const serial = getDeviceSerial();
+
+  if (!username || !password) {
+    toast('Username and password are required', 'error');
+    return;
+  }
+
+  if (state.authMode === 'signup') {
+    const name = document.getElementById('authName').value.trim();
+    const verify = document.getElementById('authVerify').value.trim();
+    
+    if (!name) { toast('Please provide your name', 'error'); return; }
+    if (password !== verify) { toast('Passwords do not match', 'error'); return; }
+
+    const { data: existingSerial } = await sb.from('adal_users').select('username').eq('serial_number', serial).maybeSingle();
+    if (existingSerial) {
+      toast('An account has already been registered on this device.', 'error');
+      return;
+    }
+
+    const { data: existingUser } = await sb.from('adal_users').select('username').eq('username', username).maybeSingle();
+    if (existingUser) {
+      toast('Username is already taken', 'error');
+      return;
+    }
+
+    const newUser = { username, password, name, serial_number: serial, created_at: new Date().toISOString(), last_seen: new Date().toISOString() };
+    const { error } = await sb.from('adal_users').insert(newUser);
+    if (error) { toast('Registration failed: ' + error.message, 'error'); return; }
+
+    state.user = { username, name };
+    localStorage.setItem('adal_user', JSON.stringify(state.user));
+    toast('Account created successfully!', 'success');
+    showApp();
+  } else {
+    const { data: userRecord } = await sb.from('adal_users').select('*').eq('username', username).maybeSingle();
+    if (!userRecord || userRecord.password !== password) {
+      toast('Invalid username or password', 'error');
+      return;
+    }
+
+    state.user = { username: userRecord.username, name: userRecord.name };
+    localStorage.setItem('adal_user', JSON.stringify(state.user));
+    toast('Welcome back!', 'success');
+    showApp();
+  }
+}
+
+function logout() {
+  localStorage.removeItem('adal_user');
+  state.user = null;
+  state.messages = [];
+  location.reload();
+}
+
 function newChat() {
   if (state.messages.length) { state.history.unshift({ id: 'h-' + Date.now(), title: state.messages[0].content.slice(0, 50), messages: [...state.messages], time: Date.now() }); if (state.history.length > 50) state.history.pop(); localStorage.setItem('history', JSON.stringify(state.history)); }
   state.messages = []; localStorage.setItem('messages', '[]'); renderMessages(); renderHistory();
@@ -412,7 +491,7 @@ function md(s) {
 function renderMessages() {
   const a = document.getElementById('chatArea');
   if (!state.messages.length) {
-    a.innerHTML = '<div class="welcome"><h2>👋 How can I help you?</h2><p>Upload PPT, PDF, images or audio — or just ask.</p><div class="price-chips"><span class="chip">📄 Doc = 20 Birr</span><span class="chip">🖼️ Image = 1 Birr</span><span class="chip">🎁 Guest: 1 doc + 5 images</span><span class="chip">🔐 Logged in: 3 docs + 10 images</span></div></div>';
+    a.innerHTML = '<div class="welcome"><h2>👋 How can I help you?</h2><p>Upload PPT, PDF, images or audio — or just ask.</p><div class="price-chips"><span class="chip">📄 Doc = 20 Birr</span><span class="chip">🖼️ Image = 1 Birr</span><span class="chip">🔐 Free User Limits: 3 docs + 10 images per month</span></div></div>';
     return;
   }
   a.innerHTML = state.messages.map(m => m.thinking ? '<div class="msg msg-ai msg-thinking">⏳ Thinking...</div>' : m.role === 'user' ? '<div class="msg msg-user">' + esc(m.content) + '</div>' : '<div class="msg msg-ai">' + md(m.content) + '</div>').join('');
@@ -445,12 +524,15 @@ async function submitPayment() {
   const packs = state.packType === 'doc' ? DOC_PACKS : IMG_PACKS;
   const p = packs[state.selectedPack];
   const shot = await compress(fi.files[0]);
-  const rec = { id: 'pay-' + Date.now(), user_key: state.userKey, label: state.userLabel, pack: state.packType, method: state.selectedMethod, amount: p.p, credits: p.c, screenshot: shot, status: 'pending' };
+  const userKey = 'u_' + state.user.username;
+  const rec = { id: 'pay-' + Date.now(), user_key: userKey, label: state.user.name || state.user.username, pack: state.packType, method: state.selectedMethod, amount: p.p, credits: p.c, screenshot: shot, status: 'pending', created_at: new Date().toISOString() };
   await sb.from('adal_payments').insert(rec);
   fi.value = ''; renderMyPayments(); toast('Submitted! Wait for admin approval ✓', 'success');
 }
 async function renderMyPayments() {
-  const { data } = await sb.from('adal_payments').select('*').eq('user_key', state.userKey).order('created_at', { ascending: false });
+  if (!state.user) return;
+  const userKey = 'u_' + state.user.username;
+  const { data } = await sb.from('adal_payments').select('*').eq('user_key', userKey).order('created_at', { ascending: false });
   const rows = data || [];
   document.getElementById('myPayments').innerHTML = rows.length ? rows.map(p => '<div style="padding:10px 14px;background:rgba(0,0,0,.2);border-radius:10px;margin-bottom:8px;display:flex;justify-content:space-between"><span>' + (p.pack === 'doc' ? '📄' : '🖼️') + ' ' + p.credits + ' ' + (p.pack === 'doc' ? 'docs' : 'images') + ' • ' + p.amount + ' Birr</span><span style="color:' + (p.status === 'approved' ? '#86efac' : p.status === 'rejected' ? '#fca5a5' : '#fcd34d') + '">' + p.status.toUpperCase() + '</span></div>').join('') : '<div style="color:var(--mu);text-align:center;padding:16px">No payments yet</div>';
 }
