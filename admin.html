@@ -2,114 +2,89 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <title>Adal Notes — Admin Dashboard</title>
 <style>
-  :root{--bg:#0b1220;--bg2:#101c33;--ac:#0ea5e9;--ac2:#0284c7;--tx:#f1f5f9;--mu:#94a3b8;--gl:rgba(255,255,255,.06);--bd:rgba(255,255,255,.12);--danger:#ef4444;--success:#22c55e;--warn:#f59e0b}
-  *{box-sizing:border-box;margin:0;padding:0}html,body{height:100%}
-  body{font-family:-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--tx);background:linear-gradient(135deg,var(--bg),var(--bg2));overflow:hidden}
-  button{font:inherit;cursor:pointer;border:none;color:inherit}input,textarea,select{font:inherit;color:inherit}
+  :root {
+    --bg: #0b1220;
+    --bg2: #101c33;
+    --ac: #0ea5e9;
+    --ac2: #0284c7;
+    --tx: #f1f5f9;
+    --mu: #94a3b8;
+    --gl: rgba(255,255,255,.06);
+    --bd: rgba(255,255,255,.12);
+    --danger: #ef4444;
+    --success: #22c55e;
+    --warn: #f59e0b;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { min-height: 100%; background: linear-gradient(135deg, var(--bg), var(--bg2)); color: var(--tx); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+
+  /* App Layout */
+  .app { display: flex; flex-direction: row; min-height: 100vh; }
   
-  .app{display:flex;height:100vh}
-  .sidebar{width:320px;background:rgba(0,0,0,.3);backdrop-filter:blur(20px);border-right:1px solid var(--bd);display:flex;flex-direction:column;padding:20px;gap:12px;overflow-y:auto}
-  .logo{font-size:20px;font-weight:800;background:linear-gradient(90deg,var(--ac),#a78bfa);-webkit-background-clip:text;background-clip:text;color:transparent;margin-bottom:12px}
+  /* Sidebar */
+  .sidebar { width: 320px; background: rgba(0,0,0,.4); backdrop-filter: blur(20px); border-right: 1px solid var(--bd); padding: 20px; display: flex; flex-direction: column; gap: 12px; shrink: 0; }
+  .logo { font-size: 20px; font-weight: 800; background: linear-gradient(90deg, var(--ac), #a78bfa); -webkit-background-clip: text; background-clip: text; color: transparent; margin-bottom: 8px; }
+  .sidebar-header { font-size: 12px; color: var(--mu); text-transform: uppercase; tracking: 1px; margin-bottom: 4px; }
+  .users-list { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; max-height: calc(100vh - 100px); }
+
+  /* User Cards */
+  .user-card { background: var(--gl); border: 1px solid var(--bd); border-radius: 12px; padding: 12px 14px; cursor: pointer; transition: all .2s ease; position: relative; }
+  .user-card:hover, .user-card.active { border-color: var(--ac); background: rgba(255,255,255,.12); }
+  .user-card-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+  .user-name { font-weight: 700; font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .user-status { width: 10px; height: 10px; border-radius: 50%; background: #4b5563; flex-shrink: 0; }
+  .user-status.online { background: var(--success); box-shadow: 0 0 8px var(--success); }
+  .user-sub { font-size: 12px; color: var(--mu); }
+  .badge-red { position: absolute; top: -4px; right: -4px; width: 12px; height: 12px; background: var(--danger); border-radius: 50%; border: 2px solid var(--bg); }
+
+  /* Main Section */
+  .main { flex: 1; padding: 24px; overflow-y: auto; }
+  .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; gap: 16px; flex-wrap: wrap; }
+  .header h1 { font-size: 22px; font-weight: 800; }
+
+  /* Grids & Cards */
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; margin-bottom: 24px; }
+  .card { background: var(--gl); border: 1px solid var(--bd); border-radius: 16px; padding: 20px; }
+  .card h3 { font-size: 16px; margin-bottom: 16px; color: var(--mu); display: flex; align-items: center; justify-content: space-between; }
+
+  /* Forms & Controls */
+  .form-group { margin-bottom: 14px; }
+  .form-label { display: block; font-size: 12px; color: var(--mu); margin-bottom: 6px; }
+  .form-input { width: 100%; background: rgba(0,0,0,.3); border: 1px solid var(--bd); border-radius: 10px; padding: 12px; outline: none; color: var(--tx); }
+  textarea.form-input { resize: vertical; min-height: 100px; font-family: inherit; font-size: 13px; line-height: 1.4; }
   
-  .user-card{background:var(--gl);border:1px solid var(--bd);border-radius:12px;padding:12px 14px;cursor:pointer;transition:.2s;position:relative}
-  .user-card:hover,.user-card.active{border-color:var(--ac);background:rgba(255,255,255,.1)}
-  .user-card-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
-  .user-name{font-weight:700;font-size:15px}
-  .user-status{width:10px;height:10px;border-radius:50%;background:#4b5563}
-  .user-status.online{background:var(--success);box-shadow:0 0 8px var(--success)}
-  .user-sub{font-size:12px;color:var(--mu)}
-  
-  .badge-red{position:absolute;top:-4px;right:-4px;width:14px;height:14px;background:var(--danger);border-radius:50%;border:2px solid var(--bg)}
+  .credit-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .btn-group { display: flex; gap: 6px; margin-top: 6px; }
+  .btn { padding: 10px 14px; border-radius: 8px; font-weight: 600; font-size: 13px; background: var(--gl); border: 1px solid var(--bd); color: #fff; cursor: pointer; transition: background .2s; text-align: center; }
+  .btn:hover { background: rgba(255,255,255,.1); }
+  .btn-primary { background: linear-gradient(135deg, var(--ac), var(--ac2)); border: none; }
+  .btn-danger { background: var(--danger); border: none; }
+  .btn-success { background: var(--success); border: none; }
 
-  .main{flex:1;display:flex;flex-direction:column;overflow-y:auto;padding:24px}
-  .header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px}
-  .header h1{font-size:22px;font-weight:800}
+  /* Payment Items */
+  .payment-item { background: rgba(0,0,0,.3); border: 1px solid var(--bd); border-radius: 12px; padding: 14px; margin-bottom: 12px; }
+  .payment-img-wrap { margin: 10px 0; background: #000; border-radius: 8px; overflow: hidden; border: 1px solid var(--bd); cursor: pointer; }
+  .payment-img { width: 100%; height: auto; display: block; }
 
-  .grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px}
-  .card{background:var(--gl);border:1px solid var(--bd);border-radius:16px;padding:20px}
-  .card h3{font-size:16px;margin-bottom:16px;color:var(--mu);display:flex;align-items:center;justify-content:space-between}
+  /* Toast Notifications */
+  .toast { position: fixed; bottom: 24px; right: 24px; background: var(--ac); color: #fff; padding: 12px 20px; border-radius: 10px; font-weight: 500; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,.3); }
+  .toast.error { background: var(--danger); }
+  .toast.success { background: var(--success); }
 
-  .form-group{margin-bottom:14px}
-  .form-label{display:block;font-size:12px;color:var(--mu);margin-bottom:4px}
-  .form-input{width:100%;background:rgba(0,0,0,.3);border:1px solid var(--bd);border-radius:10px;padding:10px;outline:none}
-  textarea.form-input{resize:vertical;min-height:100px;font-family:inherit;font-size:13px;line-height:1.4}
-  
-  .credit-controls{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  .btn-group{display:flex;gap:6px;margin-top:6px}
-  .btn{padding:8px 14px;border-radius:8px;font-weight:600;font-size:13px;background:var(--gl);border:1px solid var(--bd)}
-  .btn:hover{background:rgba(255,255,255,.1)}
-  .btn-primary{background:linear-gradient(135deg,var(--ac),var(--ac2));color:#fff}
-  .btn-danger{background:var(--danger);color:#fff}
-  .btn-success{background:var(--success);color:#fff}
-
-  .payment-item{background:rgba(0,0,0,.3);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:12px}
-  .payment-img-wrap{margin:10px 0;background:#000;border-radius:8px;overflow:hidden;border:1px solid var(--bd);cursor:pointer}
-  .payment-img{width:100%;height:auto;display:block}
-
-  .toast{position:fixed;bottom:24px;right:24px;background:var(--ac);color:#fff;padding:12px 20px;border-radius:10px;font-weight:500;z-index:1000}
-  .toast.error{background:var(--danger)}.toast.success{background:var(--success)}
-  /* Enable smooth scrolling & prevent outer overflow on mobile */
-html, body {
-  height: 100%;
-  overflow-x: hidden;
-}
-
-/* Adjust layout containers to stack vertically on smaller screens */
-@media (max-width: 768px) {
-  body {
-    overflow-y: auto; /* Allow natural scrolling on mobile */
+  /* Mobile Responsive Breakpoints */
+  @media (max-width: 868px) {
+    .app { flex-direction: column; }
+    .sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--bd); padding: 16px; }
+    .users-list { max-height: 180px; }
+    .main { padding: 16px; }
+    .header { flex-direction: column; align-items: stretch; gap: 12px; }
+    .credit-controls { grid-template-columns: 1fr; }
+    .grid { grid-template-columns: 1fr; }
   }
-
-  .app {
-    flex-direction: column;
-    height: auto;
-    min-height: 100vh;
-  }
-
-  /* Sidebar styling for mobile */
-  .sidebar {
-    width: 100% !important;
-    border-right: none !important;
-    border-bottom: 1px solid var(--bd);
-    padding: 16px;
-    max-height: 250px; /* Limit list height so main content remains visible */
-    overflow-y: auto;
-  }
-
-  /* Main panel adjustments */
-  .main {
-    padding: 16px;
-    overflow-y: visible;
-  }
-
-  /* Single-column grid layout for cards and form elements */
-  .grid, 
-  .credit-controls {
-    grid-template-columns: 1fr !important;
-    gap: 16px;
-  }
-
-  /* Header adjustments */
-  .header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-  }
-
-  .header button {
-    width: 100%;
-  }
-
-  /* Prevent code/prompt textareas from forcing horizontal scroll */
-  textarea.form-input,
-  .form-input {
-    width: 100%;
-    box-sizing: border-box;
-  }
-}
 </style>
 </head>
 <body>
@@ -117,8 +92,8 @@ html, body {
 <div class="app">
   <aside class="sidebar">
     <div class="logo">Adal Admin</div>
-    <div style="font-size:12px;color:var(--mu);margin-bottom:8px">REGISTERED USERS</div>
-    <div id="usersList"></div>
+    <div class="sidebar-header">REGISTERED USERS</div>
+    <div class="users-list" id="usersList"></div>
   </aside>
 
   <main class="main">
@@ -158,7 +133,7 @@ html, body {
         <div id="prevCbe" style="margin-top:6px;font-size:12px;color:var(--mu)"></div>
       </div>
 
-      <button class="btn btn-success" id="saveGlobalBtn">Save Global Settings</button>
+      <button class="btn btn-success" id="saveGlobalBtn" style="width:100%">Save Global Settings</button>
     </div>
 
     <!-- User Details Grid -->
@@ -166,12 +141,14 @@ html, body {
       <!-- User Info & Credits -->
       <div class="card">
         <h3>User Details & Wallet</h3>
-        <div style="margin-bottom:16px;font-size:14px">
+        <div style="margin-bottom:16px;font-size:14px;line-height:1.6">
           <div><b>Full Name:</b> <span id="uDetailName">-</span></div>
           <div><b>Username:</b> <span id="uDetailUsername">-</span></div>
           <div><b>Device Serial:</b> <span id="uDetailSerial" style="font-family:monospace;font-size:12px">-</span></div>
           <div><b>Last Active:</b> <span id="uDetailSeen">-</span></div>
         </div>
+
+        <button class="btn btn-danger" style="width:100%;margin-bottom:16px" onclick="deleteCurrentUser()">🗑️ Delete User Profile</button>
         
         <hr style="border-color:var(--bd);margin:16px 0" />
 
@@ -322,6 +299,24 @@ async function loadSelectedUser(username) {
     </div>
   `).join('');
 }
+
+window.deleteCurrentUser = async function() {
+  if (!selectedUser) return;
+  if (!confirm(`Are you sure you want to delete @${selectedUser.username}? They will need to re-register.`)) return;
+
+  const userKey = 'u_' + selectedUser.username;
+
+  // Delete user profile, wallet, and associated payments
+  await sb.from('adal_users').delete().eq('username', selectedUser.username);
+  await sb.from('adal_wallets').delete().eq('user_key', userKey);
+  await sb.from('adal_payments').delete().eq('user_key', userKey);
+
+  toast('User deleted successfully', 'success');
+  selectedUser = null;
+  document.getElementById('userDetailsGrid').style.display = 'none';
+  document.getElementById('selectedUserHeader').textContent = 'Select a user';
+  refreshData();
+};
 
 window.openImage = function(id) {
   const imgEl = document.getElementById('img-' + id);
