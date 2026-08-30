@@ -161,10 +161,8 @@
 </div>
 
 <script type="module">
-/* ===== HARDCODED SUPABASE (public anon key — safe) ===== */
 const SB_URL = "https://hyedovbgfriqpavqpldh.supabase.co";
 const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh5ZWRvdmJnZnJpcXBhdnFwbGRoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc3OTM4MDQsImV4cCI6MjEwMzM2OTgwNH0.9cwyP8FFhxGK5xB90EZfxZO8LuMfXpTVzAwj0Q9cr28";
-/* ======================================================= */
 
 const FREE_GUEST = { doc: 1, img: 5 };
 const FREE_USER = { doc: 3, img: 10 };
@@ -192,7 +190,6 @@ async function boot() {
   document.body.className = 'theme-' + state.theme;
   renderFlowers(); bindUI();
 
-  // Fetch ALL config from admin (Supabase settings)
   state.apiKey = await getSetting('grok_key', '');
   state.model = (await getSetting('grok_model', '')) || 'grok-3-mini';
   state.systemPrompt = (await getSetting('prompt', '')).trim() || await promptTxt() || DEFAULT_PROMPT;
@@ -212,7 +209,6 @@ async function getSetting(k, fb) {
   return data ? data.value : (localStorage.getItem('adal_' + k) ?? fb);
 }
 
-/* ---------- Clerk initialization ---------- */
 function waitFor(fn, ms = 12000) { 
   return new Promise((res, rej) => { 
     const t = Date.now(); 
@@ -222,6 +218,18 @@ function waitFor(fn, ms = 12000) {
       else if (Date.now() - t > ms) { clearInterval(iv); rej(new Error('Clerk timeout')); } 
     }, 100); 
   }); 
+}
+
+async function triggerSignIn() {
+  if (!clerk) {
+    toast('Clerk is initializing... please try again in a moment.', 'error');
+    return;
+  }
+  try {
+    clerk.openSignIn();
+  } catch (e) {
+    toast('Sign in failed to open: ' + e.message, 'error');
+  }
 }
 
 async function initClerk(clerkKey) {
@@ -246,16 +254,15 @@ async function initClerk(clerkKey) {
       document.getElementById('outBtn').onclick = async () => { await clerk.signOut(); location.reload(); };
     } else {
       box.innerHTML = '<button class="btn-small" id="loginBtn">🔐 Sign in</button>';
-      document.getElementById('loginBtn').onclick = () => clerk.openSignIn();
+      document.getElementById('loginBtn').onclick = triggerSignIn;
       clerk.addListener(ev => { if (ev.user) location.reload(); });
     }
   } catch (e) { 
     box.innerHTML = '<button class="btn-small" id="loginBtn">🔐 Sign in</button>'; 
-    document.getElementById('loginBtn').onclick = () => toast('Login error: ' + e.message, 'error'); 
+    document.getElementById('loginBtn').onclick = triggerSignIn;
   }
 }
 
-/* ---------- Wallet ---------- */
 async function loadWallet() {
   const allow = state.clerkUser ? FREE_USER : FREE_GUEST;
   let { data } = await sb.from('adal_wallets').select('*').eq('user_key', state.userKey).maybeSingle();
@@ -273,7 +280,6 @@ function charge(kind) {
   persistWallet(); renderWallet(); return true;
 }
 
-/* ---------- UI ---------- */
 function renderFlowers() { const c = document.getElementById('flowers'); c.innerHTML = ''; ['🌸','','','','🌻','','','','🌷','','','','🌸','','','','🌻',''].forEach(f => { const el = document.createElement('span'); el.className = 'flower'; el.textContent = f; el.style.left = Math.random()*100+'%'; el.style.animationDuration = (8+Math.random()*8)+'s'; el.style.animationDelay = Math.random()*8+'s'; el.style.fontSize = (20+Math.random()*18)+'px'; c.appendChild(el); }); }
 function bindUI() {
   document.getElementById('themeToggle').onclick = () => { state.theme = state.theme === 'male' ? 'female' : 'male'; document.body.className = 'theme-' + state.theme; localStorage.setItem('theme', state.theme); };
@@ -290,6 +296,7 @@ function bindUI() {
   i.addEventListener('input', () => { i.style.height = 'auto'; i.style.height = Math.min(i.scrollHeight, 180) + 'px'; });
   i.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
   document.getElementById('fileInput').addEventListener('change', e => { state.attachedFile = e.target.files[0] || null; renderFilePreview(); });
+  document.getElementById('loginBtn').onclick = triggerSignIn;
 }
 function newChat() {
   if (state.messages.length) { state.history.unshift({ id: 'h-' + Date.now(), title: state.messages[0].content.slice(0, 50), messages: [...state.messages], time: Date.now() }); if (state.history.length > 50) state.history.pop(); localStorage.setItem('history', JSON.stringify(state.history)); }
@@ -297,7 +304,6 @@ function newChat() {
   document.querySelector('[data-page="chat"]').click();
 }
 
-/* ---------- Files ---------- */
 function classifyFile(f) { const isImg = (f.type || '').startsWith('image/') || /\.(png|jpe?g|webp|gif|heic|bmp)$/i.test(f.name); return isImg ? { kind: 'img', icon: '🖼️' } : { kind: 'doc', icon: '📄' }; }
 function renderFilePreview() {
   const p = document.getElementById('filePreview');
@@ -307,7 +313,6 @@ function renderFilePreview() {
   document.getElementById('rmFile').onclick = () => { state.attachedFile = null; document.getElementById('fileInput').value = ''; renderFilePreview(); };
 }
 
-/* ---------- Chat & Grok ---------- */
 async function callGrok(msgs) {
   const body = JSON.stringify({ model: state.model, messages: msgs, max_tokens: 1500 });
   const headers = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + state.apiKey };
@@ -376,7 +381,6 @@ function renderMessages() {
   a.scrollTop = a.scrollHeight;
 }
 
-/* ---------- History ---------- */
 function renderHistory() {
   const l = document.getElementById('historyList');
   if (!state.history.length) { l.innerHTML = '<div class="empty-state"><div style="font-size:48px">📚</div>No history yet</div>'; return; }
@@ -385,7 +389,6 @@ function renderHistory() {
   l.querySelectorAll('[data-del]').forEach(el => el.onclick = () => { state.history.splice(+el.dataset.del, 1); localStorage.setItem('history', JSON.stringify(state.history)); renderHistory(); });
 }
 
-/* ---------- Payment ---------- */
 function selectPackType(t) { state.packType = t; state.selectedPack = 0; document.getElementById('tab-doc').classList.toggle('selected', t === 'doc'); document.getElementById('tab-img').classList.toggle('selected', t === 'img'); renderPacks(); renderQr(); }
 function renderPacks() {
   const packs = state.packType === 'doc' ? DOC_PACKS : IMG_PACKS;
