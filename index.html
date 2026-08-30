@@ -171,14 +171,23 @@ const IMG_PACKS = [{c:10,p:10},{c:50,p:50},{c:100,p:100},{c:500,p:500}];
 const curMonth = () => new Date().toISOString().slice(0,7);
 let sb = null, clerk = null;
 
+function getDeviceId() {
+  let d = localStorage.getItem('deviceId');
+  if (!d) {
+    d = Math.random().toString(36).slice(2);
+    localStorage.setItem('deviceId', d);
+  }
+  return d;
+}
+
 const state = {
   theme: localStorage.getItem('theme') || 'male',
   apiKey: '', model: 'grok-3-mini', systemPrompt: '',
   messages: JSON.parse(localStorage.getItem('messages') || '[]'),
   history: JSON.parse(localStorage.getItem('history') || '[]'),
   wallet: null, clerkUser: null,
-  userKey: 'g_' + (localStorage.getItem('deviceId') || (() => { const d = Math.random().toString(36).slice(2); localStorage.setItem('deviceId', d); return d; })()),
-  userLabel: 'guest',
+  userKey: 'g_' + getDeviceId(),
+  userLabel: 'Guest (' + getDeviceId().slice(-6) + ')',
   qr: { telebirr: '', cbe: '' },
   packType: 'doc', selectedPack: 0, selectedMethod: 'telebirr',
   attachedFile: null, sending: false,
@@ -198,7 +207,6 @@ async function boot() {
   const clerkKey = (await getSetting('clerk_key', '')).trim() || "pk_test_aHVtYmxlLWdvcGhlci04NDg4LmNsZXJrLmFjY291bnRzLmRldiQ";
 
   await initClerk(clerkKey);
-  await loadWallet();
   renderMessages(); renderHistory(); renderPacks(); renderQr(); renderMyPayments();
 }
 const DEFAULT_PROMPT = 'You are Adal Notes AI — a friendly, intelligent study assistant. Analyze uploaded files (PPT, PDF, images, audio). Answer clearly using headings, **bold** and bullet points. Be encouraging and precise.';
@@ -237,6 +245,7 @@ async function initClerk(clerkKey) {
   if (!clerkKey) { 
     box.innerHTML = '<button class="btn-small" id="loginBtn">🔐 Sign in</button>'; 
     document.getElementById('loginBtn').onclick = () => toast('Owner: set Clerk key in admin panel', 'error'); 
+    await loadWallet();
     return; 
   }
   try {
@@ -253,24 +262,53 @@ async function initClerk(clerkKey) {
       try { clerk.mountUserButton(document.getElementById('ub')); } catch (e) { document.getElementById('ub').textContent = state.userLabel; }
       document.getElementById('outBtn').onclick = async () => { await clerk.signOut(); location.reload(); };
     } else {
+      state.userKey = 'g_' + getDeviceId();
+      state.userLabel = 'Guest (' + state.userKey.slice(-6) + ')';
+      document.getElementById('authStatus').textContent = '👤 ' + state.userLabel;
       box.innerHTML = '<button class="btn-small" id="loginBtn">🔐 Sign in</button>';
       document.getElementById('loginBtn').onclick = triggerSignIn;
       clerk.addListener(ev => { if (ev.user) location.reload(); });
     }
   } catch (e) { 
+    state.userKey = 'g_' + getDeviceId();
+    state.userLabel = 'Guest (' + state.userKey.slice(-6) + ')';
     box.innerHTML = '<button class="btn-small" id="loginBtn">🔐 Sign in</button>'; 
     document.getElementById('loginBtn').onclick = triggerSignIn;
   }
+  
+  await loadWallet();
 }
 
 async function loadWallet() {
   const allow = state.clerkUser ? FREE_USER : FREE_GUEST;
   let { data } = await sb.from('adal_wallets').select('*').eq('user_key', state.userKey).maybeSingle();
-  if (!data) { data = { user_key: state.userKey, label: state.userLabel, doc_credits: 0, img_credits: 0, doc_free: allow.doc, img_free: allow.img, month: curMonth() }; await sb.from('adal_wallets').insert(data); }
-  if (state.clerkUser && data.month !== curMonth()) { data.doc_free = allow.doc; data.img_free = allow.img; data.month = curMonth(); await sb.from('adal_wallets').update({ doc_free: data.doc_free, img_free: data.img_free, month: data.month }).eq('user_key', state.userKey); }
+  
+  if (!data) { 
+    data = { 
+      user_key: state.userKey, 
+      label: state.userLabel, 
+      doc_credits: 0, 
+      img_credits: 0, 
+      doc_free: allow.doc, 
+      img_free: allow.img, 
+      month: curMonth() 
+    }; 
+    await sb.from('adal_wallets').insert(data); 
+  } else if (data.label !== state.userLabel) {
+    await sb.from('adal_wallets').update({ label: state.userLabel }).eq('user_key', state.userKey);
+  }
+
+  if (state.clerkUser && data.month !== curMonth()) { 
+    data.doc_free = allow.doc; 
+    data.img_free = allow.img; 
+    data.month = curMonth(); 
+    await sb.from('adal_wallets').update({ doc_free: data.doc_free, img_free: data.img_free, month: data.month }).eq('user_key', state.userKey); 
+  }
+  
   state.wallet = data;
   renderWallet();
 }
+
 function persistWallet() { sb.from('adal_wallets').update({ doc_free: state.wallet.doc_free, img_free: state.wallet.img_free, doc_credits: state.wallet.doc_credits, img_credits: state.wallet.img_credits }).eq('user_key', state.userKey); }
 function renderWallet() { if (!state.wallet) return; document.getElementById('docLeft').textContent = state.wallet.doc_free + state.wallet.doc_credits; document.getElementById('imgLeft').textContent = state.wallet.img_free + state.wallet.img_credits; }
 function charge(kind) {
