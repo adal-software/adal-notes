@@ -4,7 +4,13 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Adal Notes</title>
-<script async src="https://cdn.jsdelivr.net/npm/@clerk/clerk-js@latest/dist/clerk.browser.js"></script>
+<script
+  async
+  crossorigin="anonymous"
+  data-clerk-publishable-key="pk_test_aHVtYmxlLWdvcGhlci04NDg4LmNsZXJrLmFjY291bnRzLmRldiQ"
+  src="https://cdn.jsdelivr.net/npm/@clerk/clerk-js@latest/dist/clerk.browser.js"
+  type="text/javascript"
+></script>
 <style>
   :root{--bg:#0b1220;--bg2:#101c33;--ac:#0ea5e9;--ac2:#0284c7;--tx:#f1f5f9;--mu:#94a3b8;--gl:rgba(255,255,255,.06);--bd:rgba(255,255,255,.12)}
   body.theme-female{--bg:#2a1458;--bg2:#4a1d6e;--ac:#ec4899;--ac2:#db2777}
@@ -118,7 +124,7 @@
         <div id="filePreview" style="max-width:900px;margin:0 auto"></div>
         <div class="input-row">
           <input type="file" id="fileInput" accept=".pdf,.ppt,.pptx,image/*,audio/*" style="display:none" />
-          <button class="btn-icon" id="attachBtn"></button>
+          <button class="btn-icon" id="attachBtn">📎</button>
           <textarea class="chat-input" id="chatInput" placeholder="Type your message..." rows="1"></textarea>
           <button class="btn-send" id="sendBtn">➤</button>
         </div>
@@ -155,10 +161,10 @@
 </div>
 
 <script type="module">
-/* ===== ONLY PUBLIC VALUES HERE (safe) ===== */
+/* ===== HARDCODED SUPABASE (public anon key — safe) ===== */
 const SB_URL = "https://hyedovbgfriqpavqpldh.supabase.co";
 const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh5ZWRvdmJnZnJpcXBhdnFwbGRoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc3OTM4MDQsImV4cCI6MjEwMzM2OTgwNH0.9cwyP8FFhxGK5xB90EZfxZO8LuMfXpTVzAwj0Q9cr28";
-/* =========================================== */
+/* ======================================================= */
 
 const FREE_GUEST = { doc: 1, img: 5 };
 const FREE_USER = { doc: 3, img: 10 };
@@ -192,7 +198,7 @@ async function boot() {
   state.systemPrompt = (await getSetting('prompt', '')).trim() || await promptTxt() || DEFAULT_PROMPT;
   state.qr.telebirr = await getSetting('qr_telebirr', '');
   state.qr.cbe = await getSetting('qr_cbe', '');
-  const clerkKey = await getSetting('clerk_key', '');
+  const clerkKey = (await getSetting('clerk_key', '')).trim() || "pk_test_aHVtYmxlLWdvcGhlci04NDg4LmNsZXJrLmFjY291bnRzLmRldiQ";
 
   await initClerk(clerkKey);
   await loadWallet();
@@ -206,15 +212,30 @@ async function getSetting(k, fb) {
   return data ? data.value : (localStorage.getItem('adal_' + k) ?? fb);
 }
 
-/* ---------- Clerk (key from admin) ---------- */
-function waitFor(fn, ms = 20000) { return new Promise((res, rej) => { const t = Date.now(); const iv = setInterval(() => { const v = fn(); if (v) { clearInterval(iv); res(v); } else if (Date.now() - t > ms) { clearInterval(iv); rej(new Error('Clerk timeout')); } }, 100); }); }
+/* ---------- Clerk initialization ---------- */
+function waitFor(fn, ms = 12000) { 
+  return new Promise((res, rej) => { 
+    const t = Date.now(); 
+    const iv = setInterval(() => { 
+      const v = fn(); 
+      if (v) { clearInterval(iv); res(v); } 
+      else if (Date.now() - t > ms) { clearInterval(iv); rej(new Error('Clerk timeout')); } 
+    }, 100); 
+  }); 
+}
+
 async function initClerk(clerkKey) {
   const box = document.getElementById('authBox');
-  if (!clerkKey) { box.innerHTML = '<button class="btn-small" id="loginBtn">🔐 Sign in</button>'; document.getElementById('loginBtn').onclick = () => toast('Owner: set Clerk key in admin panel', 'error'); return; }
+  if (!clerkKey) { 
+    box.innerHTML = '<button class="btn-small" id="loginBtn">🔐 Sign in</button>'; 
+    document.getElementById('loginBtn').onclick = () => toast('Owner: set Clerk key in admin panel', 'error'); 
+    return; 
+  }
   try {
-    const Cls = await waitFor(() => window.Clerk);
-    clerk = new Cls(clerkKey);
-    await clerk.load();
+    await waitFor(() => window.Clerk);
+    clerk = window.Clerk;
+    await clerk.load({ publishableKey: clerkKey });
+
     if (clerk.user) {
       state.clerkUser = clerk.user;
       state.userKey = 'u_' + clerk.user.id;
@@ -228,10 +249,13 @@ async function initClerk(clerkKey) {
       document.getElementById('loginBtn').onclick = () => clerk.openSignIn();
       clerk.addListener(ev => { if (ev.user) location.reload(); });
     }
-  } catch (e) { box.innerHTML = '<button class="btn-small" id="loginBtn">🔐 Sign in</button>'; document.getElementById('loginBtn').onclick = () => toast('Login error: ' + e.message, 'error'); }
+  } catch (e) { 
+    box.innerHTML = '<button class="btn-small" id="loginBtn">🔐 Sign in</button>'; 
+    document.getElementById('loginBtn').onclick = () => toast('Login error: ' + e.message, 'error'); 
+  }
 }
 
-/* ---------- wallet ---------- */
+/* ---------- Wallet ---------- */
 async function loadWallet() {
   const allow = state.clerkUser ? FREE_USER : FREE_GUEST;
   let { data } = await sb.from('adal_wallets').select('*').eq('user_key', state.userKey).maybeSingle();
@@ -249,7 +273,7 @@ function charge(kind) {
   persistWallet(); renderWallet(); return true;
 }
 
-/* ---------- ui ---------- */
+/* ---------- UI ---------- */
 function renderFlowers() { const c = document.getElementById('flowers'); c.innerHTML = ''; ['🌸','','','','🌻','','','','🌷','','','','🌸','','','','🌻',''].forEach(f => { const el = document.createElement('span'); el.className = 'flower'; el.textContent = f; el.style.left = Math.random()*100+'%'; el.style.animationDuration = (8+Math.random()*8)+'s'; el.style.animationDelay = Math.random()*8+'s'; el.style.fontSize = (20+Math.random()*18)+'px'; c.appendChild(el); }); }
 function bindUI() {
   document.getElementById('themeToggle').onclick = () => { state.theme = state.theme === 'male' ? 'female' : 'male'; document.body.className = 'theme-' + state.theme; localStorage.setItem('theme', state.theme); };
@@ -273,7 +297,7 @@ function newChat() {
   document.querySelector('[data-page="chat"]').click();
 }
 
-/* ---------- files ---------- */
+/* ---------- Files ---------- */
 function classifyFile(f) { const isImg = (f.type || '').startsWith('image/') || /\.(png|jpe?g|webp|gif|heic|bmp)$/i.test(f.name); return isImg ? { kind: 'img', icon: '🖼️' } : { kind: 'doc', icon: '📄' }; }
 function renderFilePreview() {
   const p = document.getElementById('filePreview');
@@ -283,7 +307,7 @@ function renderFilePreview() {
   document.getElementById('rmFile').onclick = () => { state.attachedFile = null; document.getElementById('fileInput').value = ''; renderFilePreview(); };
 }
 
-/* ---------- chat ---------- */
+/* ---------- Chat & Grok ---------- */
 async function callGrok(msgs) {
   const body = JSON.stringify({ model: state.model, messages: msgs, max_tokens: 1500 });
   const headers = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + state.apiKey };
@@ -352,7 +376,7 @@ function renderMessages() {
   a.scrollTop = a.scrollHeight;
 }
 
-/* ---------- history ---------- */
+/* ---------- History ---------- */
 function renderHistory() {
   const l = document.getElementById('historyList');
   if (!state.history.length) { l.innerHTML = '<div class="empty-state"><div style="font-size:48px">📚</div>No history yet</div>'; return; }
@@ -361,7 +385,7 @@ function renderHistory() {
   l.querySelectorAll('[data-del]').forEach(el => el.onclick = () => { state.history.splice(+el.dataset.del, 1); localStorage.setItem('history', JSON.stringify(state.history)); renderHistory(); });
 }
 
-/* ---------- payment ---------- */
+/* ---------- Payment ---------- */
 function selectPackType(t) { state.packType = t; state.selectedPack = 0; document.getElementById('tab-doc').classList.toggle('selected', t === 'doc'); document.getElementById('tab-img').classList.toggle('selected', t === 'img'); renderPacks(); renderQr(); }
 function renderPacks() {
   const packs = state.packType === 'doc' ? DOC_PACKS : IMG_PACKS;
