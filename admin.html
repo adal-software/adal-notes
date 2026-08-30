@@ -53,7 +53,6 @@
 <body>
 
 <div class="app">
-  <!-- Header -->
   <header class="header">
     <h1>🛡️ Adal Notes <span style="font-size:14px;color:var(--mu)">Admin Control Panel</span></h1>
     <div style="display:flex;align-items:center;gap:12px">
@@ -62,18 +61,16 @@
     </div>
   </header>
 
-  <!-- PIN Screen -->
   <div class="pin-screen" id="pinScreen">
     <h2>🔑 Admin Access</h2>
     <p>Enter your Security PIN to manage system settings, users, and payments.</p>
     <input type="password" id="pinInput" class="form-input" placeholder="Enter Admin PIN" autofocus />
     <button class="btn-primary" id="pinSubmitBtn">Unlock Dashboard</button>
     <div style="margin-top:16px">
-      <button class="btn-small" id="forgotBtn" style="width:100%">Forgot PIN? Reset with Gmail</button>
+      <button class="btn-small" id="forgotBtn" style="width:100%">Sign In / Reset with Clerk</button>
     </div>
   </div>
 
-  <!-- Main Admin Dashboard -->
   <main id="adminMain" style="display:none">
     <div class="nav-tabs">
       <button class="nav-tab active" data-tab="payments">💳 Payments Approval</button>
@@ -81,7 +78,6 @@
       <button class="nav-tab" data-tab="settings">⚙️ System Settings</button>
     </div>
 
-    <!-- Payments Tab -->
     <section id="tab-payments">
       <div class="card">
         <h3>💳 Pending Payments <button class="btn-small" id="refreshPaymentsBtn">🔄 Refresh</button></h3>
@@ -107,7 +103,6 @@
       </div>
     </section>
 
-    <!-- Wallets Tab -->
     <section id="tab-wallets" style="display:none">
       <div class="card">
         <h3>👥 User Wallets <button class="btn-small" id="refreshWalletsBtn">🔄 Refresh</button></h3>
@@ -132,7 +127,6 @@
       </div>
     </section>
 
-    <!-- Settings Tab -->
     <section id="tab-settings" style="display:none">
       <div class="card">
         <h3>⚙️ System & API Credentials</h3>
@@ -182,16 +176,13 @@
   </main>
 </div>
 
-<!-- Screenshot Preview Modal -->
 <div id="imgModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:2000;place-items:center;padding:20px" onclick="this.style.display='none'">
   <img id="modalImg" style="max-width:90vw;max-height:90vh;border-radius:12px;box-shadow:0 0 30px rgba(0,0,0,.5)" />
 </div>
 
 <script type="module">
-/* ===== HARDCODED SUPABASE (public anon key — safe) ===== */
 const SB_URL = "https://hyedovbgfriqpavqpldh.supabase.co";
 const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh5ZWRvdmJnZnJpcXBhdnFwbGRoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc3OTM4MDQsImV4cCI6MjEwMzM2OTgwNH0.9cwyP8FFhxGK5xB90EZfxZO8LuMfXpTVzAwj0Q9cr28";
-/* ======================================================= */
 
 let sb = null, clerk = null;
 const state = {
@@ -201,15 +192,36 @@ const state = {
   qrCbe: ''
 };
 
-function waitFor(fn, ms = 12000) { 
+function waitFor(fn, ms = 10000) { 
   return new Promise((res, rej) => { 
     const t = Date.now(); 
     const iv = setInterval(() => { 
       const v = fn(); 
       if (v) { clearInterval(iv); res(v); } 
-      else if (Date.now() - t > ms) { clearInterval(iv); rej(new Error('Clerk timeout')); } 
+      else if (Date.now() - t > ms) { clearInterval(iv); rej(new Error('Clerk load timeout')); } 
     }, 100); 
   }); 
+}
+
+async function initClerk() {
+  const statusEl = document.getElementById('ckStatus');
+  try {
+    const key = (await getSetting('clerk_key', '')).trim() || "pk_test_aHVtYmxlLWdvcGhlci04NDg4LmNsZXJrLmFjY291bnRzLmRldiQ";
+    await waitFor(() => window.Clerk);
+    clerk = window.Clerk;
+    await clerk.load({ publishableKey: key });
+
+    statusEl.textContent = clerk.user ? 'Clerk: Signed In' : 'Clerk Ready';
+    statusEl.className = 'status ok';
+
+    if (clerk.user && sessionStorage.getItem('adminUnlocked') === 'true') {
+      unlock();
+    }
+  } catch (err) {
+    console.error("Clerk Init Error:", err);
+    statusEl.textContent = 'Clerk Offline';
+    statusEl.className = 'status';
+  }
 }
 
 async function boot() {
@@ -222,6 +234,8 @@ async function boot() {
   if (sessionStorage.getItem('adminUnlocked') === 'true') {
     unlock();
   }
+
+  await initClerk();
 }
 
 async function getSetting(k, fb) {
@@ -241,7 +255,7 @@ async function saveSetting(k, v) {
 function bindUI() {
   document.getElementById('pinSubmitBtn').onclick = checkPin;
   document.getElementById('pinInput').addEventListener('keydown', e => { if (e.key === 'Enter') checkPin(); });
-  document.getElementById('forgotBtn').onclick = forgot;
+  document.getElementById('forgotBtn').onclick = handleClerkAuth;
   document.getElementById('logoutBtn').onclick = lock;
 
   document.querySelectorAll('.nav-tab').forEach(tab => {
@@ -303,42 +317,26 @@ function lock() {
   document.getElementById('pinInput').value = '';
 }
 
-/* ---------- Reset PIN via Clerk ---------- */
-async function forgot() {
-  const key = (await getSetting('clerk_key', '')).trim() || "pk_test_aHVtYmxlLWdvcGhlci04NDg4LmNsZXJrLmFjY291bnRzLmRldiQ";
-
-  if (!key) {
-    toast('No Clerk key saved yet. Use default PIN 12345, then add Clerk key in Settings.', 'error');
+async function handleClerkAuth() {
+  if (!clerk) {
+    toast('Clerk SDK loading... Please wait or check your Clerk Publishable Key.', 'error');
     return;
   }
-
-  try {
-    await waitFor(() => window.Clerk);
-    clerk = window.Clerk;
-    await clerk.load({ publishableKey: key });
-
-    document.getElementById('ckStatus').textContent = 'Clerk ✓';
-    document.getElementById('ckStatus').className = 'status ok';
-
-    if (clerk.user) {
-      checkOwner(clerk.user);
-    } else {
-      clerk.openSignIn();
-      clerk.addListener(async ev => { 
-        if (ev.user) checkOwner(ev.user); 
-      });
-    }
-  } catch (e) { 
-    toast('Clerk error: ' + e.message, 'error'); 
+  if (clerk.user) {
+    toast('Authenticated as ' + (clerk.user.primaryEmailAddress?.emailAddress || 'User'), 'success');
+    sessionStorage.setItem('adminUnlocked', 'true');
+    unlock();
+  } else {
+    clerk.openSignIn();
+    clerk.addListener(async ev => { 
+      if (ev.user) {
+        sessionStorage.setItem('adminUnlocked', 'true');
+        unlock(); 
+      }
+    });
   }
 }
 
-function checkOwner(user) {
-  toast('Signed in as ' + (user.primaryEmailAddress?.emailAddress || 'Owner') + ' — Unlocked!', 'success');
-  unlock();
-}
-
-/* ---------- Payments Management ---------- */
 async function loadPayments() {
   const { data } = await sb.from('adal_payments').select('*').order('created_at', { ascending: false });
   const rows = data || [];
@@ -353,13 +351,13 @@ async function loadPayments() {
     <tr>
       <td><b>${esc(p.label || p.user_key)}</b></td>
       <td>${p.pack === 'doc' ? '📄 Document' : '🖼️ Image'}</td>
-      <td>${p.method.toUpperCase()}</td>
+      <td>${p.method ? p.method.toUpperCase() : 'N/A'}</td>
       <td><b>${p.amount} Birr</b></td>
       <td>+${p.credits}</td>
       <td>${p.screenshot ? `<img src="${p.screenshot}" class="img-preview" onclick="showImg('${p.screenshot}')" />` : 'No screenshot'}</td>
-      <td><span style="color:${p.status === 'approved' ? '#86efac' : p.status === 'rejected' ? '#fca5a5' : '#fcd34d'}">${p.status.toUpperCase()}</span></td>
+      <td><span style="color:${p.status === 'approved' ? '#86efac' : p.status === 'rejected' ? '#fca5a5' : '#fcd34d'}">${(p.status || 'PENDING').toUpperCase()}</span></td>
       <td>
-        ${p.status === 'pending' ? `
+        ${p.status === 'pending' || !p.status ? `
           <button class="btn-success" onclick="approvePay('${p.id}', '${p.user_key}', '${p.pack}', ${p.credits})">Approve</button>
           <button class="btn-danger" onclick="rejectPay('${p.id}')">Reject</button>
         ` : '—'}
@@ -370,7 +368,6 @@ async function loadPayments() {
 
 window.approvePay = async (id, userKey, pack, credits) => {
   await sb.from('adal_payments').update({ status: 'approved' }).eq('id', id);
-  
   let { data: wallet } = await sb.from('adal_wallets').select('*').eq('user_key', userKey).maybeSingle();
   if (wallet) {
     const updateObj = pack === 'doc' 
@@ -388,7 +385,6 @@ window.rejectPay = async (id) => {
   loadPayments();
 };
 
-/* ---------- Wallets Management ---------- */
 async function loadWallets() {
   const { data } = await sb.from('adal_wallets').select('*').order('created_at', { ascending: false });
   const rows = data || [];
@@ -427,7 +423,6 @@ window.addCredits = async (userKey, kind) => {
   }
 };
 
-/* ---------- System Settings Management ---------- */
 async function loadSettings() {
   document.getElementById('cfgPin').value = await getSetting('admin_pin', '12345');
   document.getElementById('cfgGrokKey').value = await getSetting('grok_key', '');
@@ -462,7 +457,6 @@ async function saveSettings() {
   toast('Settings saved successfully ✓', 'success');
 }
 
-/* ---------- Utilities ---------- */
 window.showImg = (src) => {
   document.getElementById('modalImg').src = src;
   document.getElementById('imgModal').style.display = 'grid';
