@@ -45,7 +45,8 @@
   .btn-success{background:var(--success);color:#fff}
 
   .payment-item{background:rgba(0,0,0,.3);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:12px}
-  .payment-img{width:100%;max-height:250px;object-fit:contain;border-radius:8px;margin:10px 0;background:#000}
+  .payment-img-wrap{margin:10px 0;background:#000;border-radius:8px;overflow:hidden;border:1px solid var(--bd);cursor:pointer}
+  .payment-img{width:100%;height:auto;display:block}
 
   .toast{position:fixed;bottom:24px;right:24px;background:var(--ac);color:#fff;padding:12px 20px;border-radius:10px;font-weight:500;z-index:1000}
   .toast.error{background:var(--danger)}.toast.success{background:var(--success)}
@@ -74,12 +75,14 @@
         <input type="password" id="cfgGrokKey" class="form-input" />
       </div>
       <div class="form-group">
-        <label class="form-label">Telebirr QR Image URL</label>
-        <input type="text" id="cfgQrTelebirr" class="form-input" />
+        <label class="form-label">Upload Telebirr QR Image</label>
+        <input type="file" accept="image/*" id="cfgQrTelebirr" class="form-input" />
+        <div id="prevTelebirr" style="margin-top:6px;font-size:12px;color:var(--mu)"></div>
       </div>
       <div class="form-group">
-        <label class="form-label">CBE QR Image URL</label>
-        <input type="text" id="cfgQrCbe" class="form-input" />
+        <label class="form-label">Upload CBE QR Image</label>
+        <input type="file" accept="image/*" id="cfgQrCbe" class="form-input" />
+        <div id="prevCbe" style="margin-top:6px;font-size:12px;color:var(--mu)"></div>
       </div>
       <button class="btn btn-success" id="saveGlobalBtn">Save Global Settings</button>
     </div>
@@ -139,6 +142,8 @@ let usersCache = [];
 let pendingPaymentsCache = [];
 let selectedUser = null;
 let selectedWallet = null;
+let currentTelebirrQr = '';
+let currentCbeQr = '';
 
 async function boot() {
   const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2');
@@ -147,7 +152,6 @@ async function boot() {
   bindEvents();
   loadGlobalSettings();
   
-  // Auto-refresh data every 5 seconds
   refreshData();
   setInterval(refreshData, 5000);
 }
@@ -222,12 +226,19 @@ async function loadSelectedUser(username) {
 
   payContainer.innerHTML = userPayments.map(p => `
     <div class="payment-item">
-      <div style="display:flex;justify-content:space-between;font-weight:700">
+      <div style="display:flex;justify-content:space-between;align-items:center;font-weight:700">
         <span>${p.pack === 'doc' ? '📄 Docs' : '🖼️ Images'} (${p.credits})</span>
-        <span style="color:${p.status === 'approved' ? 'var(--success)' : p.status === 'rejected' ? 'var(--danger)' : 'var(--warn)'}">${p.status.toUpperCase()}</span>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="color:${p.status === 'approved' ? 'var(--success)' : p.status === 'rejected' ? 'var(--danger)' : 'var(--warn)'}">${p.status.toUpperCase()}</span>
+          <button class="btn btn-danger" style="padding:4px 8px;font-size:11px" onclick="deletePayment('${p.id}')">🗑️ Delete</button>
+        </div>
       </div>
       <div style="font-size:12px;color:var(--mu);margin-top:2px">Amount: ${p.amount} Birr via ${p.method} • ${new Date(p.created_at).toLocaleString()}</div>
-      ${p.screenshot ? `<img src="${p.screenshot}" class="payment-img" onclick="window.open('${p.screenshot}')" />` : ''}
+      ${p.screenshot ? `
+        <div class="payment-img-wrap" onclick="openImage('${p.id}')">
+          <img src="${p.screenshot}" id="img-${p.id}" class="payment-img" />
+        </div>
+      ` : ''}
       ${p.status === 'pending' ? `
         <div style="display:flex;gap:8px;margin-top:8px">
           <button class="btn btn-success" style="flex:1" onclick="processPayment('${p.id}', '${p.pack}', ${p.credits}, 'approved')">Approve & Add Credits</button>
@@ -237,6 +248,23 @@ async function loadSelectedUser(username) {
     </div>
   `).join('');
 }
+
+window.openImage = function(id) {
+  const imgEl = document.getElementById('img-' + id);
+  if (!imgEl) return;
+  const w = window.open("");
+  w.document.write(`<body style="margin:0;background:#000;display:grid;place-items:center;min-height:100vh"><img src="${imgEl.src}" style="max-width:100%;max-height:100vh" /></body>`);
+};
+
+window.deletePayment = async function(payId) {
+  if (!confirm('Are you sure you want to delete this payment log?')) return;
+  const { error } = await sb.from('adal_payments').delete().eq('id', payId);
+  if (error) toast('Delete failed: ' + error.message, 'error');
+  else {
+    toast('Payment log deleted', 'success');
+    refreshData();
+  }
+};
 
 window.adjustCredits = function(type, amount) {
   if (!selectedWallet) return;
@@ -272,8 +300,16 @@ async function loadGlobalSettings() {
   if (!keys) return;
   keys.forEach(k => {
     if (k.key === 'grok_key') document.getElementById('cfgGrokKey').value = k.value;
-    if (k.key === 'qr_telebirr') document.getElementById('cfgQrTelebirr').value = k.value;
-    if (k.key === 'qr_cbe') document.getElementById('cfgQrCbe').value = k.value;
+    if (k.key === 'qr_telebirr') { currentTelebirrQr = k.value; document.getElementById('prevTelebirr').textContent = k.value ? '✓ Image currently uploaded' : 'No image uploaded'; }
+    if (k.key === 'qr_cbe') { currentCbeQr = k.value; document.getElementById('prevCbe').textContent = k.value ? '✓ Image currently uploaded' : 'No image uploaded'; }
+  });
+}
+
+function fileToBase64(file) {
+  return new Promise(res => {
+    const r = new FileReader();
+    r.onload = () => res(r.result);
+    r.readAsDataURL(file);
   });
 }
 
@@ -290,15 +326,27 @@ function bindEvents() {
 
   document.getElementById('saveGlobalBtn').onclick = async () => {
     const k = document.getElementById('cfgGrokKey').value;
-    const t = document.getElementById('cfgQrTelebirr').value;
-    const c = document.getElementById('cfgQrCbe').value;
+    const tFile = document.getElementById('cfgQrTelebirr').files[0];
+    const cFile = document.getElementById('cfgQrCbe').files[0];
+
+    let tVal = currentTelebirrQr;
+    let cVal = currentCbeQr;
+
+    if (tFile) tVal = await fileToBase64(tFile);
+    if (cFile) cVal = await fileToBase64(cFile);
 
     await sb.from('adal_settings').upsert([
       { key: 'grok_key', value: k },
-      { key: 'qr_telebirr', value: t },
-      { key: 'qr_cbe', value: c }
+      { key: 'qr_telebirr', value: tVal },
+      { key: 'qr_cbe', value: cVal }
     ]);
-    toast('Settings saved', 'success');
+    
+    currentTelebirrQr = tVal;
+    currentCbeQr = cVal;
+    document.getElementById('prevTelebirr').textContent = tVal ? '✓ Image currently uploaded' : 'No image uploaded';
+    document.getElementById('prevCbe').textContent = cVal ? '✓ Image currently uploaded' : 'No image uploaded';
+    
+    toast('Settings saved successfully', 'success');
   };
 }
 
