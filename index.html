@@ -2,190 +2,254 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Adal Notes</title>
 <style>
-  :root {
-    --bg: #0b1220;
-    --bg2: #101c33;
-    --ac: #0ea5e9;
-    --ac2: #0284c7;
-    --tx: #f1f5f9;
-    --mu: #94a3b8;
-    --gl: rgba(255,255,255,.06);
-    --bd: rgba(255,255,255,.12);
-    --danger: #ef4444;
-    --success: #22c55e;
+  :root{--bg:#0b1220;--bg2:#101c33;--ac:#0ea5e9;--ac2:#0284c7;--tx:#f1f5f9;--mu:#94a3b8;--gl:rgba(255,255,255,.06);--bd:rgba(255,255,255,.12)}
+  body.theme-female{--bg:#2a1458;--bg2:#4a1d6e;--ac:#ec4899;--ac2:#db2777}
+  *{box-sizing:border-box;margin:0;padding:0}html,body{height:100%}
+  body{font-family:-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--tx);background:linear-gradient(135deg,var(--bg),var(--bg2));overflow:hidden;transition:background .5s}
+  button{font:inherit;cursor:pointer;border:none;color:inherit}input,textarea{font:inherit;color:inherit}
+  .flowers{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:0;display:none}
+  body.theme-female .flowers{display:block}
+  .flower{position:absolute;top:-10%;font-size:28px;opacity:.5;animation:fall linear infinite;filter:drop-shadow(0 0 8px rgba(236,72,153,.4))}
+  @keyframes fall{to{transform:translateY(120vh) rotate(360deg)}}
+
+  /* Auth Screen Overlay */
+  .auth-overlay{position:fixed;inset:0;background:linear-gradient(135deg,var(--bg),var(--bg2));z-index:999;display:flex;align-items:center;justify-content:center;padding:20px}
+  .auth-card{background:var(--gl);border:1px solid var(--bd);border-radius:20px;padding:32px;width:100%;max-width:400px;backdrop-filter:blur(20px);box-shadow:0 20px 40px rgba(0,0,0,.4)}
+  .auth-title{font-size:24px;font-weight:800;margin-bottom:8px;text-align:center;background:linear-gradient(90deg,var(--ac),#a78bfa);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .auth-sub{font-size:13px;color:var(--mu);text-align:center;margin-bottom:24px}
+  .auth-form{display:flex;flex-direction:column;gap:14px}
+  .auth-tabs{display:flex;gap:10px;margin-bottom:16px;background:rgba(0,0,0,.2);padding:4px;border-radius:12px}
+  .auth-tab{flex:1;padding:8px;border-radius:8px;font-size:14px;font-weight:600;text-align:center;background:transparent;color:var(--mu);transition:.2s}
+  .auth-tab.active{background:var(--ac);color:#fff}
+
+  .app{display:none;height:100vh;position:relative;z-index:1}
+  .app.active{display:flex}
+  .sidebar{width:280px;background:rgba(0,0,0,.3);backdrop-filter:blur(20px);border-right:1px solid var(--bd);display:flex;flex-direction:column;padding:20px 14px;gap:8px}
+  .logo{display:flex;align-items:center;gap:12px;padding:10px 12px;margin-bottom:12px}
+  .logo-icon{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,var(--ac),var(--ac2));display:grid;place-items:center;font-size:20px}
+  .logo-text{font-weight:800;font-size:18px}.logo-sub{font-size:11px;color:var(--mu)}
+  .nav-btn{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;color:var(--mu);font-weight:500;width:100%;text-align:left;background:transparent;transition:.2s}
+  .nav-btn:hover{background:var(--gl);color:var(--tx)}
+  .nav-btn.active{background:linear-gradient(135deg,var(--ac),var(--ac2));color:#fff}
+  .new-chat-btn{width:100%;padding:12px;border-radius:12px;background:var(--gl);border:1px dashed var(--bd);color:var(--tx);font-weight:600;margin-bottom:8px}
+  .sidebar-bottom{margin-top:auto;padding:12px;background:var(--gl);border-radius:14px;border:1px solid var(--bd);font-size:12px;color:var(--mu)}
+  .sidebar-bottom b{color:var(--tx)}.wline{display:flex;justify-content:space-between;margin-top:4px}
+  .toggle{display:flex;align-items:center;gap:10px;background:var(--gl);border:1px solid var(--bd);padding:8px 12px;border-radius:999px;font-size:13px}
+  .toggle-track{width:40px;height:22px;border-radius:999px;background:var(--ac);position:relative}
+  .toggle-thumb{position:absolute;top:3px;width:16px;height:16px;background:#fff;border-radius:50%;left:3px;transition:left .3s}
+  body.theme-female .toggle-thumb{left:21px}
+  .main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+  .header{padding:14px 24px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;background:rgba(0,0,0,.15)}
+  .header h1{font-size:18px;font-weight:700}
+  .btn-small{background:var(--gl);border:1px solid var(--bd);padding:8px 14px;border-radius:10px;font-size:13px}
+  .btn-small:hover{background:rgba(255,255,255,.1)}
+  .page{flex:1;overflow-y:auto;display:none}.page.active{display:flex;flex-direction:column}
+  .chat-area{flex:1;overflow-y:auto;padding:24px}
+  .welcome{text-align:center;padding:60px 20px;color:var(--mu)}
+  .welcome h2{font-size:34px;font-weight:800;margin-bottom:12px;background:linear-gradient(90deg,var(--ac),#a78bfa);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .price-chips{display:flex;gap:10px;justify-content:center;margin-top:18px;flex-wrap:wrap}
+  .chip{background:var(--gl);border:1px solid var(--bd);border-radius:999px;padding:8px 16px;font-size:13px;color:var(--tx)}
+  .msg{max-width:78%;margin-bottom:14px;padding:14px 18px;border-radius:18px;line-height:1.6;word-wrap:break-word;animation:pop .25s}
+  .msg pre{background:rgba(0,0,0,.4);padding:10px;border-radius:8px;margin:8px 0;white-space:pre-wrap}
+  .msg strong{color:#fff}
+  @keyframes pop{from{opacity:0;transform:translateY(6px)}to{opacity:1}}
+  .msg-user{background:linear-gradient(135deg,var(--ac),var(--ac2));margin-left:auto;color:#fff;border-bottom-right-radius:4px;white-space:pre-wrap}
+  .msg-ai{background:var(--gl);border:1px solid var(--bd);border-bottom-left-radius:4px}
+  .msg-thinking{color:var(--mu);font-style:italic}
+  .chat-input-bar{padding:16px 20px;border-top:1px solid var(--bd);background:rgba(0,0,0,.2)}
+  .input-row{display:flex;gap:10px;max-width:900px;margin:0 auto}
+  .chat-input{flex:1;background:var(--gl);border:1px solid var(--bd);border-radius:14px;padding:14px 16px;resize:none;min-height:52px;max-height:180px;outline:none}
+  .chat-input:focus{border-color:var(--ac)}
+  .btn-icon{width:52px;height:52px;border-radius:14px;background:var(--gl);border:1px solid var(--bd);display:grid;place-items:center;font-size:20px}
+  .btn-send{width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,var(--ac),var(--ac2));color:#fff;display:grid;place-items:center;font-size:20px}
+  .btn-send:disabled{opacity:.5}
+  .file-attached{display:inline-flex;align-items:center;gap:8px;background:var(--gl);border:1px solid var(--bd);border-radius:10px;padding:6px 12px;font-size:13px;margin-bottom:8px}
+  .cost-tag{background:var(--ac);color:#fff;border-radius:999px;padding:2px 8px;font-size:11px;font-weight:700}
+  .page-content{padding:24px;max-width:900px;margin:0 auto;width:100%}
+  .card{background:var(--gl);border:1px solid var(--bd);border-radius:16px;padding:20px;margin-bottom:16px}
+  .card h3{margin-bottom:12px;font-size:17px}
+  .form-label{display:block;font-size:13px;color:var(--mu);margin-bottom:6px}
+  .form-input{width:100%;background:rgba(0,0,0,.25);border:1px solid var(--bd);border-radius:10px;padding:12px;outline:none}
+  .btn-primary{background:linear-gradient(135deg,var(--ac),var(--ac2));color:#fff;padding:12px 22px;border-radius:12px;font-weight:600}
+  .tabs{display:flex;gap:8px;margin-bottom:14px}
+  .tab{flex:1;padding:12px;border-radius:12px;background:var(--gl);border:2px solid var(--bd);font-weight:600}
+  .tab.selected{border-color:var(--ac);background:rgba(255,255,255,.08)}
+  .packs{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px}
+  .pack{background:var(--gl);border:2px solid var(--bd);border-radius:14px;padding:14px;cursor:pointer;text-align:center}
+  .pack.selected{border-color:var(--ac);background:linear-gradient(135deg,var(--ac),var(--ac2));color:#fff}
+  .pack-num{font-size:22px;font-weight:800}.pack-label{font-size:12px;opacity:.85}
+  .method-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+  .method-btn{background:var(--gl);border:2px solid var(--bd);border-radius:12px;padding:14px}
+  .method-btn.selected{border-color:var(--ac)}
+  .qr-box{background:#fff;color:#111;border-radius:14px;padding:20px;text-align:center;margin-bottom:14px}
+  .qr-box img{max-width:220px;max-height:220px;border-radius:8px}
+  .history-item{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-radius:12px;background:var(--gl);border:1px solid var(--bd);margin-bottom:10px;cursor:pointer}
+  .empty-state{text-align:center;padding:60px 20px;color:var(--mu)}
+  .toast{position:fixed;bottom:24px;right:24px;background:var(--ac);color:#fff;padding:14px 20px;border-radius:12px;font-weight:500;z-index:1000;animation:slideIn .3s;max-width:340px}
+  .toast.error{background:#dc2626}.toast.success{background:#16a34a}
+  @keyframes slideIn{from{transform:translateX(400px);opacity:0}to{transform:none;opacity:1}}
+  @media(max-width:800px){.sidebar{position:fixed;z-index:100;height:100%;transform:translateX(-100%);transition:.3s}.sidebar.open{transform:translateX(0)}.mobile-toggle{display:inline-block!important}}
+  .mobile-toggle{display:none}
+  ::-webkit-scrollbar{width:8px}::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:4px}
+  /* Enable smooth scrolling & prevent outer overflow on mobile */
+html, body {
+  height: 100%;
+  overflow-x: hidden;
+}
+
+/* Adjust layout containers to stack vertically on smaller screens */
+@media (max-width: 768px) {
+  body {
+    overflow-y: auto; /* Allow natural scrolling on mobile */
   }
 
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { min-height: 100%; background: linear-gradient(135deg, var(--bg), var(--bg2)); color: var(--tx); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-
-  .app { display: flex; flex-direction: row; min-height: 100vh; }
-
-  /* Sidebar */
-  .sidebar { width: 300px; background: rgba(0,0,0,.4); backdrop-filter: blur(20px); border-right: 1px solid var(--bd); padding: 20px; display: flex; flex-direction: column; justify-content: space-between; gap: 16px; shrink: 0; }
-  .logo { font-size: 22px; font-weight: 800; background: linear-gradient(90deg, var(--ac), #a78bfa); -webkit-background-clip: text; background-clip: text; color: transparent; }
-  
-  /* User Box & Wallet */
-  .user-box { background: var(--gl); border: 1px solid var(--bd); border-radius: 12px; padding: 14px; }
-  .user-name { font-weight: 700; font-size: 15px; margin-bottom: 2px; }
-  .user-sub { font-size: 12px; color: var(--mu); margin-bottom: 12px; }
-  
-  .wallet-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
-  .wallet-card { background: rgba(0,0,0,.3); border: 1px solid var(--bd); border-radius: 8px; padding: 8px 10px; text-align: center; }
-  .wallet-num { font-size: 18px; font-weight: 800; color: var(--ac); }
-  .wallet-lbl { font-size: 10px; color: var(--mu); text-transform: uppercase; }
-
-  /* Buttons & Inputs */
-  .btn { padding: 10px 14px; border-radius: 8px; font-weight: 600; font-size: 13px; background: var(--gl); border: 1px solid var(--bd); color: #fff; cursor: pointer; transition: background .2s; text-align: center; width: 100%; display: block; }
-  .btn:hover { background: rgba(255,255,255,.1); }
-  .btn-primary { background: linear-gradient(135deg, var(--ac), var(--ac2)); border: none; }
-  .btn-success { background: var(--success); border: none; }
-
-  .form-group { margin-bottom: 14px; }
-  .form-label { display: block; font-size: 12px; color: var(--mu); margin-bottom: 6px; }
-  .form-input { width: 100%; background: rgba(0,0,0,.3); border: 1px solid var(--bd); border-radius: 10px; padding: 12px; outline: none; color: var(--tx); }
-  textarea.form-input { resize: vertical; min-height: 120px; font-family: inherit; font-size: 13px; line-height: 1.4; }
-
-  /* Main Workspace */
-  .main { flex: 1; padding: 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; }
-  .workspace { background: var(--gl); border: 1px solid var(--bd); border-radius: 16px; padding: 20px; flex: 1; display: flex; flex-direction: column; gap: 16px; }
-
-  /* Modals */
-  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.7); backdrop-filter: blur(8px); display: none; place-items: center; padding: 16px; z-index: 1000; }
-  .modal-overlay.active { display: grid; }
-  .modal { background: var(--bg2); border: 1px solid var(--bd); border-radius: 16px; padding: 24px; max-width: 440px; width: 100%; max-height: 90vh; overflow-y: auto; }
-  .qr-img { width: 100%; max-height: 200px; object-fit: contain; background: #fff; border-radius: 8px; padding: 8px; margin: 10px 0; }
-
-  /* Toast Notifications */
-  .toast { position: fixed; bottom: 24px; right: 24px; background: var(--ac); color: #fff; padding: 12px 20px; border-radius: 10px; font-weight: 500; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,.3); }
-  .toast.error { background: var(--danger); }
-  .toast.success { background: var(--success); }
-
-  /* Mobile Responsiveness */
-  @media (max-width: 868px) {
-    .app { flex-direction: column; }
-    .sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--bd); padding: 16px; }
-    .main { padding: 16px; }
+  .app {
+    flex-direction: column;
+    height: auto;
+    min-height: 100vh;
   }
+
+  /* Sidebar styling for mobile */
+  .sidebar {
+    width: 100% !important;
+    border-right: none !important;
+    border-bottom: 1px solid var(--bd);
+    padding: 16px;
+    max-height: 250px; /* Limit list height so main content remains visible */
+    overflow-y: auto;
+  }
+
+  /* Main panel adjustments */
+  .main {
+    padding: 16px;
+    overflow-y: visible;
+  }
+
+  /* Single-column grid layout for cards and form elements */
+  .grid, 
+  .credit-controls {
+    grid-template-columns: 1fr !important;
+    gap: 16px;
+  }
+
+  /* Header adjustments */
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .header button {
+    width: 100%;
+  }
+
+  /* Prevent code/prompt textareas from forcing horizontal scroll */
+  textarea.form-input,
+  .form-input {
+    width: 100%;
+    box-sizing: border-box;
+  }
+}
 </style>
 </head>
-<body>
+<body class="theme-male">
+<div class="flowers" id="flowers"></div>
 
-<!-- Registration / Login Overlay -->
-<div class="modal-overlay" id="authModal">
-  <div class="modal">
-    <h2 style="font-size:20px;margin-bottom:6px">Welcome to Adal Notes</h2>
-    <p style="font-size:13px;color:var(--mu);margin-bottom:16px">Enter your details to register or continue.</p>
-    
-    <div class="form-group">
-      <label class="form-label">Full Name</label>
-      <input type="text" id="authName" class="form-input" placeholder="e.g. John Doe" />
+<div class="auth-overlay" id="authOverlay">
+  <div class="auth-card">
+    <div class="auth-title">Adal Notes</div>
+    <div class="auth-sub">Sign in or create an account to continue</div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tabSignin">Sign In</button>
+      <button class="auth-tab" id="tabSignup">Sign Up</button>
     </div>
-    <div class="form-group">
-      <label class="form-label">Username</label>
-      <input type="text" id="authUsername" class="form-input" placeholder="e.g. johndoe" />
-    </div>
-    <button class="btn btn-primary" id="authSubmitBtn">Start Using Adal Notes</button>
-  </div>
-</div>
-
-<!-- Top-Up Credits Modal -->
-<div class="modal-overlay" id="topupModal">
-  <div class="modal">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <h3 style="font-size:18px">Top-Up Credits</h3>
-      <button onclick="closeTopupModal()" style="background:none;border:none;color:var(--mu);font-size:18px;cursor:pointer">✕</button>
-    </div>
-
-    <div class="form-group">
-      <label class="form-label">Select Credit Pack</label>
-      <select id="topupPack" class="form-input" onchange="updateTopupDisplay()">
-        <option value="doc_1">1 Document Credit — 20 Birr</option>
-        <option value="doc_5">5 Document Credits — 80 Birr</option>
-        <option value="img_5">5 Image Credits — 15 Birr</option>
-        <option value="img_10">10 Image Credits — 25 Birr</option>
-      </select>
-    </div>
-
-    <div class="form-group">
-      <label class="form-label">Select Payment Method</label>
-      <select id="topupMethod" class="form-input" onchange="updateTopupDisplay()">
-        <option value="telebirr">Telebirr</option>
-        <option value="cbe">CBE Birr / Bank</option>
-      </select>
-    </div>
-
-    <div id="qrContainer" style="text-align:center">
-      <div id="qrPlaceholder" style="font-size:12px;color:var(--mu);padding:20px 0">Select payment method to view QR</div>
-      <img id="qrDisplay" class="qr-img" style="display:none" />
-    </div>
-
-    <div class="form-group" style="margin-top:12px">
-      <label class="form-label">Upload Payment Screenshot</label>
-      <input type="file" accept="image/*" id="topupScreenshot" class="form-input" />
-    </div>
-
-    <button class="btn btn-success" id="submitPaymentBtn">Submit Payment Proof</button>
-  </div>
-</div>
-
-<div class="app">
-  <aside class="sidebar">
-    <div>
-      <div class="logo" style="margin-bottom:16px">Adal Notes</div>
-      <div class="user-box">
-        <div class="user-name" id="uDisplayName">Guest User</div>
-        <div class="user-sub" id="uDisplayUsername">@guest</div>
-        
-        <div class="wallet-grid">
-          <div class="wallet-card">
-            <div class="wallet-num" id="uDocCredits">0</div>
-            <div class="wallet-lbl">Docs</div>
-          </div>
-          <div class="wallet-card">
-            <div class="wallet-num" id="uImgCredits">0</div>
-            <div class="wallet-lbl">Images</div>
-          </div>
-        </div>
-
-        <button class="btn btn-primary" onclick="openTopupModal()">+ Buy Credits</button>
+    <div class="auth-form" id="authForm">
+      <div id="nameField" style="display:none">
+        <label class="form-label">Full Name</label>
+        <input type="text" id="authName" class="form-input" placeholder="e.g. Abebe Bikila" />
       </div>
+      <div>
+        <label class="form-label">Username</label>
+        <input type="text" id="authUsername" class="form-input" placeholder="username" />
+      </div>
+      <div>
+        <label class="form-label">Password</label>
+        <input type="password" id="authPassword" class="form-input" placeholder="••••••••" />
+      </div>
+      <div id="verifyField" style="display:none">
+        <label class="form-label">Verify Password</label>
+        <input type="password" id="authVerify" class="form-input" placeholder="••••••••" />
+      </div>
+      <button class="btn-primary" id="authSubmit" style="margin-top:10px">Sign In</button>
     </div>
+  </div>
+</div>
 
-    <div style="font-size:11px;color:var(--mu);text-align:center">
-      Adal Notes v2.0 • Powered by Grok AI
+<div class="app" id="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="logo"><div class="logo-icon">📝</div><div><div class="logo-text">Adal Notes</div><div class="logo-sub">Powered by Grok</div></div></div>
+    <button class="new-chat-btn" id="newChatBtn">➕ New Chat</button>
+    <button class="nav-btn active" data-page="chat"><span>💬</span> Chat</button>
+    <button class="nav-btn" data-page="history"><span>📚</span> History</button>
+    <button class="nav-btn" data-page="payment"><span>💳</span> Payment</button>
+    <div class="sidebar-bottom">
+      <div class="wline"><span>📄 Doc uploads left</span><b id="docLeft">0</b></div>
+      <div class="wline"><span>🖼️ Image uploads left</span><b id="imgLeft">0</b></div>
+      <div style="margin-top:8px" id="authStatus">👤 User</div>
     </div>
   </aside>
-
   <main class="main">
-    <div class="workspace">
-      <h2 style="font-size:18px">AI Assistant Workspace</h2>
-
-      <div class="form-group">
-        <label class="form-label">Processing Mode</label>
-        <select id="procMode" class="form-input">
-          <option value="doc">Document Processing (Uses 1 Doc Credit)</option>
-          <option value="img">Image / OCR Extraction (Uses 1 Image Credit)</option>
-        </select>
+    <header class="header">
+      <div style="display:flex;align-items:center;gap:12px">
+        <button class="btn-icon mobile-toggle" id="menuBtn">☰</button>
+        <h1 id="pageTitle">Chat</h1>
       </div>
-
-      <div class="form-group">
-        <label class="form-label">Upload File / Image</label>
-        <input type="file" id="procFile" class="form-input" />
+      <div style="display:flex;align-items:center;gap:10px">
+        <button class="btn-small" id="logoutBtn">🚪 Logout</button>
+        <div class="toggle" id="themeToggle"><span>👨</span><div class="toggle-track"><div class="toggle-thumb"></div></div><span>👩</span></div>
       </div>
+    </header>
 
-      <div class="form-group">
-        <label class="form-label">Additional Instructions / Query</label>
-        <textarea id="procInput" class="form-input" placeholder="Enter instructions or leave blank to use global default prompt..."></textarea>
+    <div class="page active" id="page-chat">
+      <div class="chat-area" id="chatArea"></div>
+      <div class="chat-input-bar">
+        <div id="filePreview" style="max-width:900px;margin:0 auto"></div>
+        <div class="input-row">
+          <input type="file" id="fileInput" accept=".pdf,.ppt,.pptx,image/*,audio/*" style="display:none" />
+          <button class="btn-icon" id="attachBtn">📎</button>
+          <textarea class="chat-input" id="chatInput" placeholder="Type your message..." rows="1"></textarea>
+          <button class="btn-send" id="sendBtn">➤</button>
+        </div>
       </div>
+    </div>
 
-      <button class="btn btn-primary" id="processBtn" style="padding:14px">⚡ Process with Grok AI</button>
+    <div class="page" id="page-history"><div class="page-content"><div id="historyList"></div></div></div>
 
-      <div class="form-group" style="margin-top:10px;flex:1;display:flex;flex-direction:column">
-        <label class="form-label">AI Output / Result</label>
-        <textarea id="procOutput" class="form-input" readonly style="flex:1;min-height:200px;font-family:monospace;background:rgba(0,0,0,.5)" placeholder="Result will appear here..."></textarea>
+    <div class="page" id="page-payment">
+      <div class="page-content">
+        <div class="card">
+          <h3>💰 What are you buying?</h3>
+          <div class="tabs">
+            <button class="tab selected" id="tab-doc">📄 Documents<br><small>20 Birr each</small></button>
+            <button class="tab" id="tab-img">🖼️ Images<br><small>1 Birr each</small></button>
+          </div>
+          <div class="packs" id="packsList"></div>
+          <div class="method-btns">
+            <button class="method-btn selected" data-method="telebirr"><div style="font-size:22px">📱</div>Telebirr</button>
+            <button class="method-btn" data-method="cbe"><div style="font-size:22px">🏦</div>CBE</button>
+          </div>
+          <div class="qr-box" id="qrBox">QR appears here after admin uploads it</div>
+          <div style="margin-bottom:12px">
+            <label class="form-label">Upload payment screenshot</label>
+            <input type="file" accept="image/*" id="paymentScreenshot" class="form-input" style="padding:10px" />
+          </div>
+          <button class="btn-primary" style="width:100%;padding:14px" id="paySubmit">Submit Payment</button>
+          <div style="text-align:center;margin-top:10px;font-size:12px;color:var(--mu)">Admin approves manually → uploads activate automatically</div>
+        </div>
+        <div class="card"><h3>📜 My payments</h3><div id="myPayments"></div></div>
       </div>
     </div>
   </main>
@@ -195,239 +259,344 @@
 const SB_URL = "https://hyedovbgfriqpavqpldh.supabase.co";
 const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh5ZWRvdmJnZnJpcXBhdnFwbGRoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc3OTM4MDQsImV4cCI6MjEwMzM2OTgwNH0.9cwyP8FFhxGK5xB90EZfxZO8LuMfXpTVzAwj0Q9cr28";
 
+const FREE_USER = { doc: 3, img: 10 };
+const DOC_PACKS = [{c:1,p:20},{c:5,p:90},{c:10,p:150},{c:20,p:280}];
+const IMG_PACKS = [{c:10,p:10},{c:50,p:50},{c:100,p:100},{c:500,p:500}];
+const curMonth = () => new Date().toISOString().slice(0,7);
 let sb = null;
-let currentUser = null;
-let currentWallet = { doc_credits: 0, img_credits: 0 };
-let globalSettings = {};
+
+function getDeviceSerial() {
+  let serial = localStorage.getItem('device_serial');
+  if (!serial) {
+    serial = 'SN-' + Math.random().toString(36).substring(2, 10).toUpperCase() + '-' + Date.now().toString(36).toUpperCase();
+    localStorage.setItem('device_serial', serial);
+  }
+  return serial;
+}
+
+const state = {
+  theme: localStorage.getItem('theme') || 'male',
+  authMode: 'signin',
+  user: JSON.parse(localStorage.getItem('adal_user') || 'null'),
+  apiKey: '', model: 'grok-3-mini', systemPrompt: '',
+  messages: JSON.parse(localStorage.getItem('messages') || '[]'),
+  history: JSON.parse(localStorage.getItem('history') || '[]'),
+  wallet: null,
+  qr: { telebirr: '', cbe: '' },
+  packType: 'doc', selectedPack: 0, selectedMethod: 'telebirr',
+  attachedFile: null, sending: false,
+};
 
 async function boot() {
   const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2');
   sb = createClient(SB_URL, SB_KEY);
+  document.body.className = 'theme-' + state.theme;
+  renderFlowers(); bindUI();
 
-  await loadGlobalSettings();
-  checkAuth();
-  bindEvents();
-}
-
-async function loadGlobalSettings() {
-  const { data } = await sb.from('adal_settings').select('*');
-  if (data) {
-    data.forEach(item => {
-      globalSettings[item.key] = item.value;
-    });
-  }
-}
-
-function checkAuth() {
-  const savedUser = localStorage.getItem('adal_user');
-  if (savedUser) {
-    currentUser = JSON.parse(savedUser);
-    syncUserSession();
+  if (state.user) {
+    showApp();
   } else {
-    document.getElementById('authModal').classList.add('active');
+    showAuth();
   }
 }
 
-async function syncUserSession() {
-  if (!currentUser) return;
+function showAuth() {
+  document.getElementById('authOverlay').style.display = 'flex';
+  document.getElementById('app').classList.remove('active');
+}
 
-  // Update device active timestamp
-  const nowIso = new Date().toISOString();
-  await sb.from('adal_users').upsert({
-    username: currentUser.username,
-    name: currentUser.name,
-    serial_number: currentUser.serial || 'DEVICE-' + Math.random().toString(36).substring(2, 8).toUpperCase(),
-    last_seen: nowIso
-  });
+function showApp() {
+  document.getElementById('authOverlay').style.display = 'none';
+  document.getElementById('app').classList.add('active');
+  document.getElementById('authStatus').textContent = '👤 ' + (state.user.username || 'User');
+  initApp();
+}
 
-  // Fetch current wallet
-  const userKey = 'u_' + currentUser.username;
-  const { data: wallet } = await sb.from('adal_wallets').select('*').eq('user_key', userKey).maybeSingle();
+async function initApp() {
+  state.apiKey = await getSetting('grok_key', '');
+  state.model = (await getSetting('grok_model', '')) || 'grok-3-mini';
+  state.systemPrompt = (await getSetting('prompt', '')).trim() || await promptTxt() || DEFAULT_PROMPT;
+  state.qr.telebirr = await getSetting('qr_telebirr', '');
+  state.qr.cbe = await getSetting('qr_cbe', '');
 
-  if (wallet) {
-    currentWallet = wallet;
-  } else {
-    currentWallet = { user_key: userKey, doc_credits: 1, img_credits: 5 }; // Starter bonus
-    await sb.from('adal_wallets').insert(currentWallet);
+  await loadWallet();
+  renderMessages(); renderHistory(); renderPacks(); renderQr(); renderMyPayments();
+  startHeartbeat();
+}
+
+function startHeartbeat() {
+  updateHeartbeat();
+  setInterval(updateHeartbeat, 30000);
+}
+
+async function updateHeartbeat() {
+  if (!state.user) return;
+  await sb.from('adal_users').update({ last_seen: new Date().toISOString() }).eq('username', state.user.username);
+}
+
+const DEFAULT_PROMPT = 'You are Adal Notes AI — a friendly, intelligent study assistant. Analyze uploaded files (PPT, PDF, images, audio). Answer clearly using headings, **bold** and bullet points. Be encouraging and precise.';
+async function promptTxt() { try { const r = await fetch('/prompt.txt'); return r.ok ? (await r.text()).trim() : ''; } catch { return ''; } }
+
+async function getSetting(k, fb) {
+  const { data } = await sb.from('adal_settings').select('value').eq('key', k).maybeSingle();
+  return data ? data.value : (localStorage.getItem('adal_' + k) ?? fb);
+}
+
+async function loadWallet() {
+  if (!state.user) return;
+  const userKey = 'u_' + state.user.username;
+  let { data } = await sb.from('adal_wallets').select('*').eq('user_key', userKey).maybeSingle();
+  
+  if (!data) { 
+    data = { 
+      user_key: userKey, 
+      label: state.user.name || state.user.username, 
+      doc_credits: 0, 
+      img_credits: 0, 
+      doc_free: FREE_USER.doc, 
+      img_free: FREE_USER.img, 
+      month: curMonth() 
+    }; 
+    await sb.from('adal_wallets').insert(data); 
+  } else if (data.month !== curMonth()) { 
+    data.doc_free = FREE_USER.doc; 
+    data.img_free = FREE_USER.img; 
+    data.month = curMonth(); 
+    await sb.from('adal_wallets').update({ doc_free: data.doc_free, img_free: data.img_free, month: data.month }).eq('user_key', userKey); 
+  }
+  
+  state.wallet = data;
+  renderWallet();
+}
+
+function persistWallet() { 
+  if (!state.user || !state.wallet) return;
+  sb.from('adal_wallets').update({ doc_free: state.wallet.doc_free, img_free: state.wallet.img_free, doc_credits: state.wallet.doc_credits, img_credits: state.wallet.img_credits }).eq('user_key', state.wallet.user_key); 
+}
+function renderWallet() { if (!state.wallet) return; document.getElementById('docLeft').textContent = state.wallet.doc_free + state.wallet.doc_credits; document.getElementById('imgLeft').textContent = state.wallet.img_free + state.wallet.img_credits; }
+function charge(kind) {
+  const w = state.wallet;
+  if (!w) return false;
+  if (kind === 'doc') { if (w.doc_free > 0) w.doc_free--; else if (w.doc_credits > 0) w.doc_credits--; else return false; }
+  else { if (w.img_free > 0) w.img_free--; else if (w.img_credits > 0) w.img_credits--; else return false; }
+  persistWallet(); renderWallet(); return true;
+}
+
+function renderFlowers() { const c = document.getElementById('flowers'); c.innerHTML = ''; ['🌸','','','','🌻','','','','🌷','','','','🌸','','','','🌻',''].forEach(f => { const el = document.createElement('span'); el.className = 'flower'; el.textContent = f; el.style.left = Math.random()*100+'%'; el.style.animationDuration = (8+Math.random()*8)+'s'; el.style.animationDelay = Math.random()*8+'s'; el.style.fontSize = (20+Math.random()*18)+'px'; c.appendChild(el); }); }
+
+function bindUI() {
+  document.getElementById('themeToggle').onclick = () => { state.theme = state.theme === 'male' ? 'female' : 'male'; document.body.className = 'theme-' + state.theme; localStorage.setItem('theme', state.theme); };
+  document.getElementById('menuBtn').onclick = () => document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('newChatBtn').onclick = newChat;
+  document.getElementById('attachBtn').onclick = () => document.getElementById('fileInput').click();
+  document.getElementById('sendBtn').onclick = sendMessage;
+  document.getElementById('paySubmit').onclick = submitPayment;
+  document.getElementById('logoutBtn').onclick = logout;
+
+  document.getElementById('tabSignin').onclick = () => setAuthMode('signin');
+  document.getElementById('tabSignup').onclick = () => setAuthMode('signup');
+  document.getElementById('authSubmit').onclick = handleAuthSubmit;
+
+  document.getElementById('tab-doc').onclick = () => selectPackType('doc');
+  document.getElementById('tab-img').onclick = () => selectPackType('img');
+  document.querySelectorAll('.method-btn').forEach(b => b.onclick = () => { state.selectedMethod = b.dataset.method; document.querySelectorAll('.method-btn').forEach(x => x.classList.toggle('selected', x === b)); renderQr(); });
+  document.querySelectorAll('.nav-btn').forEach(btn => btn.onclick = () => { document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); document.querySelectorAll('.page').forEach(p => p.classList.remove('active')); document.getElementById('page-' + btn.dataset.page).classList.add('active'); document.getElementById('pageTitle').textContent = btn.textContent.trim(); document.getElementById('sidebar').classList.remove('open'); });
+  const i = document.getElementById('chatInput');
+  i.addEventListener('input', () => { i.style.height = 'auto'; i.style.height = Math.min(i.scrollHeight, 180) + 'px'; });
+  i.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
+  document.getElementById('fileInput').addEventListener('change', e => { state.attachedFile = e.target.files[0] || null; renderFilePreview(); });
+}
+
+function setAuthMode(mode) {
+  state.authMode = mode;
+  document.getElementById('tabSignin').classList.toggle('active', mode === 'signin');
+  document.getElementById('tabSignup').classList.toggle('active', mode === 'signup');
+  document.getElementById('nameField').style.display = mode === 'signup' ? 'block' : 'none';
+  document.getElementById('verifyField').style.display = mode === 'signup' ? 'block' : 'none';
+  document.getElementById('authSubmit').textContent = mode === 'signup' ? 'Create Account' : 'Sign In';
+}
+
+async function handleAuthSubmit() {
+  const username = document.getElementById('authUsername').value.trim();
+  const password = document.getElementById('authPassword').value.trim();
+  const serial = getDeviceSerial();
+
+  if (!username || !password) {
+    toast('Username and password are required', 'error');
+    return;
   }
 
-  updateUI();
-}
-
-function updateUI() {
-  if (!currentUser) return;
-  document.getElementById('uDisplayName').textContent = currentUser.name || currentUser.username;
-  document.getElementById('uDisplayUsername').textContent = '@' + currentUser.username;
-  document.getElementById('uDocCredits').textContent = currentWallet.doc_credits || 0;
-  document.getElementById('uImgCredits').textContent = currentWallet.img_credits || 0;
-}
-
-window.openTopupModal = function() {
-  document.getElementById('topupModal').classList.add('active');
-  updateTopupDisplay();
-};
-
-window.closeTopupModal = function() {
-  document.getElementById('topupModal').classList.remove('active');
-};
-
-window.updateTopupDisplay = function() {
-  const method = document.getElementById('topupMethod').value;
-  const qrImg = document.getElementById('qrDisplay');
-  const placeholder = document.getElementById('qrPlaceholder');
-
-  const qrData = method === 'telebirr' ? globalSettings['qr_telebirr'] : globalSettings['qr_cbe'];
-
-  if (qrData) {
-    qrImg.src = qrData;
-    qrImg.style.display = 'block';
-    placeholder.style.display = 'none';
-  } else {
-    qrImg.style.display = 'none';
-    placeholder.style.display = 'block';
-    placeholder.textContent = 'No QR image uploaded for this payment method.';
-  }
-};
-
-function fileToBase64(file) {
-  return new Promise(res => {
-    const r = new FileReader();
-    r.onload = () => res(r.result);
-    r.readAsDataURL(file);
-  });
-}
-
-function bindEvents() {
-  // Authentication Submit
-  document.getElementById('authSubmitBtn').onclick = async () => {
+  if (state.authMode === 'signup') {
     const name = document.getElementById('authName').value.trim();
-    const username = document.getElementById('authUsername').value.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
+    const verify = document.getElementById('authVerify').value.trim();
+    
+    if (!name) { toast('Please provide your name', 'error'); return; }
+    if (password !== verify) { toast('Passwords do not match', 'error'); return; }
 
-    if (!username) return toast('Please enter a valid username', 'error');
-
-    currentUser = {
-      name: name || username,
-      username: username,
-      serial: 'SN-' + Math.random().toString(36).substring(2, 10).toUpperCase()
-    };
-
-    localStorage.setItem('adal_user', JSON.stringify(currentUser));
-    document.getElementById('authModal').classList.remove('active');
-    await syncUserSession();
-    toast('Welcome to Adal Notes!', 'success');
-  };
-
-  // Payment Proof Submit
-  document.getElementById('submitPaymentBtn').onclick = async () => {
-    if (!currentUser) return;
-    const packVal = document.getElementById('topupPack').value;
-    const method = document.getElementById('topupMethod').value;
-    const file = document.getElementById('topupScreenshot').files[0];
-
-    const [packType, creditsStr] = packVal.split('_');
-    const credits = parseInt(creditsStr, 10);
-    const amount = packVal === 'doc_1' ? 20 : packVal === 'doc_5' ? 80 : packVal === 'img_5' ? 15 : 25;
-
-    let screenshotBase64 = '';
-    if (file) screenshotBase64 = await fileToBase64(file);
-
-    const { error } = await sb.from('adal_payments').insert({
-      user_key: 'u_' + currentUser.username,
-      pack: packType,
-      credits: credits,
-      amount: amount,
-      method: method,
-      screenshot: screenshotBase64,
-      status: 'pending'
-    });
-
-    if (error) {
-      toast('Failed to submit payment: ' + error.message, 'error');
-    } else {
-      toast('Payment proof submitted! Pending admin approval.', 'success');
-      closeTopupModal();
-    }
-  };
-
-  // AI Processing Action
-  document.getElementById('processBtn').onclick = async () => {
-    const mode = document.getElementById('procMode').value;
-    const userPrompt = document.getElementById('procInput').value;
-    const file = document.getElementById('procFile').files[0];
-
-    // Credit validation
-    if (mode === 'doc' && (currentWallet.doc_credits || 0) < 1) {
-      return toast('Insufficient Document Credits. Please top up.', 'error');
-    }
-    if (mode === 'img' && (currentWallet.img_credits || 0) < 1) {
-      return toast('Insufficient Image Credits. Please top up.', 'error');
+    const { data: existingSerial } = await sb.from('adal_users').select('username').eq('serial_number', serial).maybeSingle();
+    if (existingSerial) {
+      toast('An account has already been registered on this device.', 'error');
+      return;
     }
 
-    const apiKey = globalSettings['grok_key'];
-    if (!apiKey) {
-      return toast('API Key missing. Contact admin.', 'error');
+    const { data: existingUser } = await sb.from('adal_users').select('username').eq('username', username).maybeSingle();
+    if (existingUser) {
+      toast('Username is already taken', 'error');
+      return;
     }
 
-    const defaultPrompt = mode === 'doc' ? (globalSettings['doc_prompt'] || '') : (globalSettings['img_prompt'] || '');
-    const finalPrompt = (defaultPrompt + "\n\n" + userPrompt).trim();
+    const newUser = { username, password, name, serial_number: serial, created_at: new Date().toISOString(), last_seen: new Date().toISOString() };
+    const { error } = await sb.from('adal_users').insert(newUser);
+    if (error) { toast('Registration failed: ' + error.message, 'error'); return; }
 
-    document.getElementById('procOutput').value = "Processing request with Grok AI...";
-
-    try {
-      let payload = {
-        model: "grok-vision-beta",
-        messages: []
-      };
-
-      if (file) {
-        const fileData = await fileToBase64(file);
-        payload.messages.push({
-          role: "user",
-          content: [
-            { type: "text", text: finalPrompt || "Analyze this file/image." },
-            { type: "image_url", image_url: { url: fileData } }
-          ]
-        });
-      } else {
-        payload.messages.push({
-          role: "user",
-          content: finalPrompt || "Hello!"
-        });
-      }
-
-      const res = await fetch("https://api.x.ai/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${apiKey}`
-        },
-        body: JSON.stringify(payload)
-      });
-
-      const data = await res.json();
-
-      if (data.choices && data.choices[0]) {
-        document.getElementById('procOutput').value = data.choices[0].message.content;
-
-        // Deduct credit
-        if (mode === 'doc') currentWallet.doc_credits -= 1;
-        else currentWallet.img_credits -= 1;
-
-        await sb.from('adal_wallets').upsert(currentWallet);
-        updateUI();
-        toast('Processing complete!', 'success');
-      } else {
-        document.getElementById('procOutput').value = "Error response from API: " + JSON.stringify(data);
-      }
-    } catch (err) {
-      document.getElementById('procOutput').value = "Request failed: " + err.message;
-      toast('Processing failed', 'error');
+    state.user = { username, name };
+    localStorage.setItem('adal_user', JSON.stringify(state.user));
+    toast('Account created successfully!', 'success');
+    showApp();
+  } else {
+    const { data: userRecord } = await sb.from('adal_users').select('*').eq('username', username).maybeSingle();
+    if (!userRecord || userRecord.password !== password) {
+      toast('Invalid username or password', 'error');
+      return;
     }
-  };
+
+    state.user = { username: userRecord.username, name: userRecord.name };
+    localStorage.setItem('adal_user', JSON.stringify(state.user));
+    toast('Welcome back!', 'success');
+    showApp();
+  }
 }
 
-function toast(m, t) { const e = document.createElement('div'); e.className = 'toast ' + (t || ''); e.textContent = m; document.body.appendChild(e); setTimeout(() => e.remove(), 3000); }
+function logout() {
+  localStorage.removeItem('adal_user');
+  state.user = null;
+  state.messages = [];
+  location.reload();
+}
 
+function newChat() {
+  if (state.messages.length) { state.history.unshift({ id: 'h-' + Date.now(), title: state.messages[0].content.slice(0, 50), messages: [...state.messages], time: Date.now() }); if (state.history.length > 50) state.history.pop(); localStorage.setItem('history', JSON.stringify(state.history)); }
+  state.messages = []; localStorage.setItem('messages', '[]'); renderMessages(); renderHistory();
+  document.querySelector('[data-page="chat"]').click();
+}
+
+function classifyFile(f) { const isImg = (f.type || '').startsWith('image/') || /\.(png|jpe?g|webp|gif|heic|bmp)$/i.test(f.name); return isImg ? { kind: 'img', icon: '🖼️' } : { kind: 'doc', icon: '📄' }; }
+function renderFilePreview() {
+  const p = document.getElementById('filePreview');
+  if (!state.attachedFile) { p.innerHTML = ''; return; }
+  const info = classifyFile(state.attachedFile);
+  p.innerHTML = '<div class="file-attached">' + info.icon + ' ' + esc(state.attachedFile.name) + ' <span class="cost-tag">' + (info.kind === 'img' ? 'image slot' : 'doc slot') + '</span> <span style="cursor:pointer" id="rmFile">✕</span></div>';
+  document.getElementById('rmFile').onclick = () => { state.attachedFile = null; document.getElementById('fileInput').value = ''; renderFilePreview(); };
+}
+
+async function callGrok(msgs) {
+  const body = JSON.stringify({ model: state.model, messages: msgs, max_tokens: 1500 });
+  const headers = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + state.apiKey };
+  try {
+    const r = await fetch('https://api.x.ai/v1/chat/completions', { method: 'POST', headers, body });
+    const d = await r.json().catch(() => ({}));
+    if (r.ok) return d;
+    throw new Error(d.error?.message || 'API error ' + r.status);
+  } catch (e) {
+    if (e instanceof TypeError) {
+      const r2 = await fetch('https://corsproxy.io/?url=' + encodeURIComponent('https://api.x.ai/v1/chat/completions'), { method: 'POST', headers, body });
+      const d2 = await r2.json().catch(() => ({}));
+      if (r2.ok) return d2;
+      throw new Error('Network error ' + r2.status);
+    }
+    throw e;
+  }
+}
+async function sendMessage() {
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if ((!text && !state.attachedFile) || state.sending) return;
+  if (!state.apiKey) { toast('Owner: set Grok key in admin panel → Settings', 'error'); return; }
+  let userContent = text;
+  if (state.attachedFile) {
+    const info = classifyFile(state.attachedFile);
+    if (!charge(info.kind)) { toast('No ' + (info.kind === 'img' ? 'image' : 'document') + ' uploads left. Buy in 💳 Payment.', 'error'); document.querySelector('[data-page="payment"]').click(); return; }
+    userContent = info.icon + ' Attached: ' + state.attachedFile.name + '\n\n' + text;
+  }
+  state.messages.push({ role: 'user', content: userContent });
+  input.value = ''; state.attachedFile = null; renderFilePreview(); renderMessages();
+  state.sending = true; document.getElementById('sendBtn').disabled = true;
+  state.messages.push({ role: 'assistant', content: '', thinking: true }); renderMessages();
+  try {
+    const apiMsgs = [{ role: 'system', content: state.systemPrompt }, ...state.messages.filter(m => !m.thinking).slice(-20).map(m => ({ role: m.role, content: m.content }))];
+    const d = await callGrok(apiMsgs);
+    state.messages = state.messages.filter(m => !m.thinking);
+    state.messages.push({ role: 'assistant', content: d.choices?.[0]?.message?.content || 'No response.' });
+    localStorage.setItem('messages', JSON.stringify(state.messages));
+    renderMessages();
+  } catch (e) {
+    state.messages = state.messages.filter(m => !m.thinking);
+    state.messages.push({ role: 'assistant', content: '⚠️ ' + e.message });
+    renderMessages(); toast('AI error: ' + e.message, 'error');
+  }
+  state.sending = false; document.getElementById('sendBtn').disabled = false;
+}
+function esc(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+function md(s) {
+  let h = esc(s);
+  h = h.replace(/```([\s\S]*?)```/g, (m, c) => '<pre>' + c + '</pre>');
+  h = h.replace(/^### (.*)$/gm, '<strong style="font-size:16px;display:block;margin:8px 0 4px">$1</strong>');
+  h = h.replace(/^## (.*)$/gm, '<strong style="font-size:17px;display:block;margin:8px 0 4px">$1</strong>');
+  h = h.replace(/^# (.*)$/gm, '<strong style="font-size:18px;display:block;margin:8px 0 4px">$1</strong>');
+  h = h.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  h = h.replace(/\n/g, '<br>');
+  return h;
+}
+function renderMessages() {
+  const a = document.getElementById('chatArea');
+  if (!state.messages.length) {
+    a.innerHTML = '<div class="welcome"><h2>👋 How can I help you?</h2><p>Upload PPT, PDF, images or audio — or just ask.</p><div class="price-chips"><span class="chip">📄 Doc = 20 Birr</span><span class="chip">🖼️ Image = 1 Birr</span><span class="chip">🔐 Free User Limits: 3 docs + 10 images per month</span></div></div>';
+    return;
+  }
+  a.innerHTML = state.messages.map(m => m.thinking ? '<div class="msg msg-ai msg-thinking">⏳ Thinking...</div>' : m.role === 'user' ? '<div class="msg msg-user">' + esc(m.content) + '</div>' : '<div class="msg msg-ai">' + md(m.content) + '</div>').join('');
+  a.scrollTop = a.scrollHeight;
+}
+
+function renderHistory() {
+  const l = document.getElementById('historyList');
+  if (!state.history.length) { l.innerHTML = '<div class="empty-state"><div style="font-size:48px">📚</div>No history yet</div>'; return; }
+  l.innerHTML = state.history.map((h, idx) => '<div class="history-item" data-load="' + idx + '"><div><b>' + esc(h.title) + '</b><div style="font-size:12px;color:var(--mu)">' + h.messages.length + ' msgs • ' + new Date(h.time).toLocaleDateString() + '</div></div><button class="btn-small" data-del="' + idx + '">🗑</button></div>').join('');
+  l.querySelectorAll('[data-load]').forEach(el => el.onclick = e => { if (e.target.dataset.del !== undefined) return; const h = state.history[+el.dataset.load]; state.messages = [...h.messages]; localStorage.setItem('messages', JSON.stringify(state.messages)); renderMessages(); document.querySelector('[data-page="chat"]').click(); });
+  l.querySelectorAll('[data-del]').forEach(el => el.onclick = () => { state.history.splice(+el.dataset.del, 1); localStorage.setItem('history', JSON.stringify(state.history)); renderHistory(); });
+}
+
+function selectPackType(t) { state.packType = t; state.selectedPack = 0; document.getElementById('tab-doc').classList.toggle('selected', t === 'doc'); document.getElementById('tab-img').classList.toggle('selected', t === 'img'); renderPacks(); renderQr(); }
+function renderPacks() {
+  const packs = state.packType === 'doc' ? DOC_PACKS : IMG_PACKS;
+  document.getElementById('packsList').innerHTML = packs.map((p, i) => '<div class="pack ' + (i === state.selectedPack ? 'selected' : '') + '" data-pack="' + i + '"><div class="pack-num">' + p.c + '</div><div class="pack-label">' + (state.packType === 'doc' ? 'docs' : 'images') + ' • ' + p.p + ' Birr</div></div>').join('');
+  document.querySelectorAll('[data-pack]').forEach(el => el.onclick = () => { state.selectedPack = +el.dataset.pack; renderPacks(); renderQr(); });
+}
+function renderQr() {
+  const img = state.qr[state.selectedMethod];
+  const packs = state.packType === 'doc' ? DOC_PACKS : IMG_PACKS;
+  document.getElementById('qrBox').innerHTML = img ? '<img src="' + img + '" /><div style="margin-top:8px;font-size:13px">Pay <b>' + packs[state.selectedPack].p + ' Birr</b> with ' + (state.selectedMethod === 'telebirr' ? 'Telebirr' : 'CBE') + '</div>' : '<div style="color:#888">QR not uploaded by admin yet</div>';
+}
+function compress(file, max = 800) { return new Promise(res => { const r = new FileReader(); r.onload = () => { const img = new Image(); img.onload = () => { const c = document.createElement('canvas'); const s = Math.min(1, max / img.width); c.width = img.width * s; c.height = img.height * s; c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); res(c.toDataURL('image/jpeg', .75)); }; img.src = r.result; }; r.readAsDataURL(file); }); }
+async function submitPayment() {
+  const fi = document.getElementById('paymentScreenshot');
+  if (!fi.files[0]) { toast('Upload screenshot first', 'error'); return; }
+  const packs = state.packType === 'doc' ? DOC_PACKS : IMG_PACKS;
+  const p = packs[state.selectedPack];
+  const shot = await compress(fi.files[0]);
+  const userKey = 'u_' + state.user.username;
+  const rec = { id: 'pay-' + Date.now(), user_key: userKey, label: state.user.name || state.user.username, pack: state.packType, method: state.selectedMethod, amount: p.p, credits: p.c, screenshot: shot, status: 'pending', created_at: new Date().toISOString() };
+  await sb.from('adal_payments').insert(rec);
+  fi.value = ''; renderMyPayments(); toast('Submitted! Wait for admin approval ✓', 'success');
+}
+async function renderMyPayments() {
+  if (!state.user) return;
+  const userKey = 'u_' + state.user.username;
+  const { data } = await sb.from('adal_payments').select('*').eq('user_key', userKey).order('created_at', { ascending: false });
+  const rows = data || [];
+  document.getElementById('myPayments').innerHTML = rows.length ? rows.map(p => '<div style="padding:10px 14px;background:rgba(0,0,0,.2);border-radius:10px;margin-bottom:8px;display:flex;justify-content:space-between"><span>' + (p.pack === 'doc' ? '📄' : '🖼️') + ' ' + p.credits + ' ' + (p.pack === 'doc' ? 'docs' : 'images') + ' • ' + p.amount + ' Birr</span><span style="color:' + (p.status === 'approved' ? '#86efac' : p.status === 'rejected' ? '#fca5a5' : '#fcd34d') + '">' + p.status.toUpperCase() + '</span></div>').join('') : '<div style="color:var(--mu);text-align:center;padding:16px">No payments yet</div>';
+}
+
+function toast(m, t) { const e = document.createElement('div'); e.className = 'toast ' + (t || ''); e.textContent = m; document.body.appendChild(e); setTimeout(() => e.remove(), 3500); }
 boot();
 </script>
 </body>
