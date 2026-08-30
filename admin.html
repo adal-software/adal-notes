@@ -51,6 +51,65 @@
 
   .toast{position:fixed;bottom:24px;right:24px;background:var(--ac);color:#fff;padding:12px 20px;border-radius:10px;font-weight:500;z-index:1000}
   .toast.error{background:var(--danger)}.toast.success{background:var(--success)}
+  /* Enable smooth scrolling & prevent outer overflow on mobile */
+html, body {
+  height: 100%;
+  overflow-x: hidden;
+}
+
+/* Adjust layout containers to stack vertically on smaller screens */
+@media (max-width: 768px) {
+  body {
+    overflow-y: auto; /* Allow natural scrolling on mobile */
+  }
+
+  .app {
+    flex-direction: column;
+    height: auto;
+    min-height: 100vh;
+  }
+
+  /* Sidebar styling for mobile */
+  .sidebar {
+    width: 100% !important;
+    border-right: none !important;
+    border-bottom: 1px solid var(--bd);
+    padding: 16px;
+    max-height: 250px; /* Limit list height so main content remains visible */
+    overflow-y: auto;
+  }
+
+  /* Main panel adjustments */
+  .main {
+    padding: 16px;
+    overflow-y: visible;
+  }
+
+  /* Single-column grid layout for cards and form elements */
+  .grid, 
+  .credit-controls {
+    grid-template-columns: 1fr !important;
+    gap: 16px;
+  }
+
+  /* Header adjustments */
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .header button {
+    width: 100%;
+  }
+
+  /* Prevent code/prompt textareas from forcing horizontal scroll */
+  textarea.form-input,
+  .form-input {
+    width: 100%;
+    box-sizing: border-box;
+  }
+}
 </style>
 </head>
 <body>
